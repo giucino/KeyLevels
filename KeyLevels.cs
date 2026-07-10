@@ -23,6 +23,7 @@ public class KeyLevels : Indicator
     private DateTime _curDate = DateTime.MinValue;
     private bool _haveCur, _havePrev;
     private decimal _curOpen, _curHigh, _curLow, _curClose;
+    private decimal _curCloseHi, _curCloseLo;   // Close-Extrema des Tages (fuer close-basierten Break)
     private decimal _pO, _pH, _pL, _pC;
 
     // Sessions: 0=Asia, 1=EU, 2=US
@@ -50,6 +51,7 @@ public class KeyLevels : Indicator
 
     // Anzeige-Werte (Committed + Live-Bar gefaltet)
     private decimal _dCurHigh, _dCurLow, _dCurClose;
+    private decimal _dCloseHi, _dCloseLo;   // Close-Extrema inkl. Live-Bar
     private readonly decimal[] _dSHigh = new decimal[3];
     private readonly decimal[] _dSLow = new decimal[3];
     private decimal _dIbH, _dIbL;
@@ -85,7 +87,7 @@ public class KeyLevels : Indicator
 
     private RenderFont _font;
     // Sammel-Liste je Frame: Linien zuerst, dann Labels mit Kollisionsvermeidung.
-    private readonly List<(decimal Price, int OriginBar, string Label, Color Col, bool Broken)> _levels = new();
+    private readonly List<(decimal Price, int OriginBar, string Label, Color Col, bool Broken, bool Naked)> _levels = new();
 
     // Master-Slave-Sync: ein Master publiziert seine Level, Slaves spiegeln sie.
     public enum KLRole { Standalone, Master, Slave }
@@ -193,6 +195,14 @@ public class KeyLevels : Indicator
     private KLBroken _brokenMode = KLBroken.Gestrichelt;
     private bool _brokenUseColor = false;
     private Color _brokenColor = Color.FromArgb(255, 150, 150, 150);
+    private bool _breakOnClose = false;     // Break erst, wenn eine Kerze jenseits schliesst
+
+    // Untested/Naked-Level (heute noch nicht angelaufen) optisch hervorheben.
+    private bool _highlightNaked = false;
+    private int _nakedExtraWidth = 1;
+    private bool _nakedBrighten = true;
+    private decimal _nkLo, _nkHi;   // Wick-Extrema des aktuellen Tages ("angelaufen?"-Referenz)
+    private bool _nkHave;
     public enum KLLineStyle { Durchgezogen, Gestrichelt, Gepunktet }
     private KLLineStyle _lineStyle = KLLineStyle.Durchgezogen;
     private bool _labelBox = false;
@@ -295,6 +305,7 @@ public class KeyLevels : Indicator
             }
             _curDate = d;
             _curOpen = c.Open; _curHigh = c.High; _curLow = c.Low; _curClose = c.Close;
+            _curCloseHi = _curCloseLo = c.Close;
             _haveCur = true;
             _curDayStartBar = bar;
             for (int i = 0; i < 3; i++) _sHas[i] = false;
@@ -307,6 +318,8 @@ public class KeyLevels : Indicator
             if (c.High > _curHigh) _curHigh = c.High;
             if (c.Low < _curLow) _curLow = c.Low;
             _curClose = c.Close;
+            if (c.Close > _curCloseHi) _curCloseHi = c.Close;
+            if (c.Close < _curCloseLo) _curCloseLo = c.Close;
         }
 
         // Session-Extrema.
@@ -383,6 +396,7 @@ public class KeyLevels : Indicator
     private void ComputeDisplay()
     {
         _dCurHigh = _curHigh; _dCurLow = _curLow; _dCurClose = _curClose;
+        _dCloseHi = _curCloseHi; _dCloseLo = _curCloseLo;
         for (int i = 0; i < 3; i++) { _dSHigh[i] = _sHigh[i]; _dSLow[i] = _sLow[i]; }
         _dIbH = _ibH; _dIbL = _ibL;
 
@@ -417,6 +431,8 @@ public class KeyLevels : Indicator
             if (lc.High > _dCurHigh) _dCurHigh = lc.High;
             if (lc.Low < _dCurLow) _dCurLow = lc.Low;
             _dCurClose = lc.Close;
+            // Live-Bar-Close NICHT in die Close-Extrema falten: close-basierter Break
+            // soll erst greifen, wenn eine Kerze tatsaechlich jenseits SCHLIESST.
 
             int sidx = SessionOf(leff.TimeOfDay);
             if (sidx >= 0)
@@ -576,6 +592,10 @@ public class KeyLevels : Indicator
     {
         bool haveDayRange = _haveCur;
         decimal dLo = haveDayRange ? _dCurLow : 0m, dHi = haveDayRange ? _dCurHigh : 0m;
+        // "Angelaufen?" nutzt immer die Wick-Extrema (Docht zaehlt als Test).
+        _nkHave = haveDayRange; _nkLo = dLo; _nkHi = dHi;
+        // Close-basierter Break (Option): fuer die Broken-Pruefung die Close-Extrema statt Wick nehmen.
+        if (_breakOnClose && haveDayRange) { dLo = _dCloseLo; dHi = _dCloseHi; }
 
         // Vortag (kann "gebrochen" sein, wenn der heutige Bereich durchhandelt).
         if (_havePrev)
@@ -850,18 +870,31 @@ public class KeyLevels : Indicator
         lock (_sharedLock) { _shared.TryGetValue(SyncKey(), out snap); }
         if (snap == null) return;
         foreach (var s in snap)
-            _levels.Add((s.Price, -1, s.Label, s.Col, s.Broken));   // OriginBar -1 = volle Breite
+            _levels.Add((s.Price, -1, s.Label, s.Col, s.Broken, false));   // OriginBar -1 = volle Breite; Naked nur lokal
     }
 
     // Sammelt ein Level (preisbasiert) fuer diesen Frame.
+    // Naked = heute (per Wick) noch nicht angelaufen -> starker, unberuehrter Kandidat.
     private void Level(decimal price, string label, Color col, bool broken, int originBar)
-        => _levels.Add((price, originBar, label, col, broken));
+    {
+        bool naked = _nkHave && (price > _nkHi || price < _nkLo);
+        _levels.Add((price, originBar, label, col, broken, naked));
+    }
+
+    // Farbe aufhellen (Richtung Weiss) fuer die Naked-Hervorhebung.
+    private static Color Brighten(Color c, double f = 0.45)
+    {
+        int r = (int)(c.R + (255 - c.R) * f);
+        int g = (int)(c.G + (255 - c.G) * f);
+        int b = (int)(c.B + (255 - c.B) * f);
+        return Color.FromArgb(c.A, Math.Min(255, r), Math.Min(255, g), Math.Min(255, b));
+    }
 
     // Rechnet Screen-Koordinaten (Preis->Y, Origin-Bar->X), zeichnet Linien und danach
     // Labels mit Kollisionsvermeidung (gleiche Hoehe -> nebeneinander).
     private void FlushLevels(RenderContext ctx, IChartContainer cont, Rectangle region)
     {
-        var items = new List<(int Y, int X1, string Label, Color Col, bool Broken)>();
+        var items = new List<(int Y, int X1, string Label, Color Col, bool Broken, bool Naked)>();
         foreach (var lv in _levels)
         {
             // Broken-Level nur ausblenden, wenn der User das ausdruecklich will (Opt-in).
@@ -877,9 +910,11 @@ public class KeyLevels : Indicator
                 catch { }
             }
             if (x1 > region.Right) x1 = region.Left;
+            bool naked = _highlightNaked && lv.Naked && !lv.Broken;
             var col = (lv.Broken && _brokenUseColor) ? _brokenColor : lv.Col;
+            if (naked && _nakedBrighten) col = Brighten(col);
             string lbl = _showPrice ? $"{lv.Label} {lv.Price}" : lv.Label;
-            items.Add((y, x1, lbl, col, lv.Broken));
+            items.Add((y, x1, lbl, col, lv.Broken, naked));
         }
 
         var baseStyle = _lineStyle == KLLineStyle.Gestrichelt ? System.Drawing.Drawing2D.DashStyle.Dash
@@ -889,7 +924,8 @@ public class KeyLevels : Indicator
         {
             // Broken (im Modus Gestrichelt) ueberschreibt den Linienstil auf gepunktet.
             var ds = d.Broken && _brokenMode == KLBroken.Gestrichelt ? System.Drawing.Drawing2D.DashStyle.Dot : baseStyle;
-            ctx.DrawLine(new RenderPen(d.Col, _lineWidth, ds), d.X1, d.Y, region.Right, d.Y);
+            int w = d.Naked ? _lineWidth + _nakedExtraWidth : _lineWidth;
+            ctx.DrawLine(new RenderPen(d.Col, w, ds), d.X1, d.Y, region.Right, d.Y);
         }
 
         var occupied = new List<Rectangle>();
@@ -1132,6 +1168,24 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Darstellung", TabOrder = 5)]
     [Display(Name = "Broken-Farbe", GroupName = "Broken (durchgehandelt)", Order = 6)]
     public Color BrokenColor { get => _brokenColor; set { _brokenColor = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Break erst bei Kerzen-Schluss", GroupName = "Broken (durchgehandelt)", Order = 7,
+        Description = "An = 'broken' erst, wenn eine Kerze jenseits des Levels SCHLIESST (Close-Extrema), nicht schon beim Durchwicken. Strenger. Aus = Wick-basiert (Preis war ober- und unterhalb).")]
+    public bool BreakOnClose { get => _breakOnClose; set { _breakOnClose = value; RedrawChart(); } }
+
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Naked-Level hervorheben", GroupName = "Untested / Naked", Order = 30,
+        Description = "An = Level, die heute (per Docht) noch NICHT angelaufen wurden, werden dicker/heller gezeichnet. Unberuehrte Level reagieren oft am staerksten.")]
+    public bool HighlightNaked { get => _highlightNaked; set { _highlightNaked = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Naked: Extra-Breite (px)", GroupName = "Untested / Naked", Order = 31,
+        Description = "Zusaetzliche Linienbreite fuer Naked-Level. 0 = nur ueber Farbe hervorheben.")]
+    [Range(0, 4)]
+    public int NakedExtraWidth { get => _nakedExtraWidth; set { _nakedExtraWidth = Math.Clamp(value, 0, 4); RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Naked: aufhellen", GroupName = "Untested / Naked", Order = 32,
+        Description = "An = Naked-Level werden zusaetzlich heller gezeichnet (Richtung Weiss).")]
+    public bool NakedBrighten { get => _nakedBrighten; set { _nakedBrighten = value; RedrawChart(); } }
 
     [Tab(TabName = "Darstellung", TabOrder = 5)]
     [Display(Name = "Linienstil", GroupName = "Darstellung", Order = 10, Description = "Stil aller Level-Linien. Gebrochene Level bleiben (im Broken-Modus Gestrichelt) gepunktet.")]
