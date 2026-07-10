@@ -142,6 +142,18 @@ public class KeyLevels : Indicator
     private bool _labelLeft = true;
     private bool _brokenDotted = true;
 
+    // Editierbare Level-Namen (Default = Kuerzel)
+    private string _lPdH = "pH", _lPdL = "pL", _lPdO = "pO", _lPdC = "pC";
+    private string _lCdH = "H", _lCdL = "L", _lCdO = "O", _lCdEq = "EQ";
+    private string _lAsiaH = "Asia H", _lAsiaL = "Asia L", _lEuH = "EU H", _lEuL = "EU L", _lUsH = "US H", _lUsL = "US L";
+    private string _lIbH = "IBH", _lIbL = "IBL";
+    private string _lPVah = "pVAH", _lPVal = "pVAL", _lPVpoc = "pVPOC";
+    private string _lCVah = "VAH", _lCVal = "VAL", _lCVpoc = "VPOC";
+    private string _lPVwap = "pVWAP", _lPWvah = "pWVAH", _lPWval = "pWVAL";
+    private string _lCVwap = "VWAP", _lCWvah = "WVAH", _lCWval = "WVAL";
+    private string _lPwH = "pwH", _lPwL = "pwL", _lPwO = "pwO", _lPwC = "pwC", _lCwH = "wH", _lCwL = "wL";
+    private string _lPmH = "pmH", _lPmL = "pmL", _lPmO = "pmO", _lPmC = "pmC", _lCmH = "mH", _lCmL = "mL";
+
     public KeyLevels() : base(true)
     {
         EnableCustomDrawing = true;
@@ -421,93 +433,93 @@ public class KeyLevels : Indicator
         // Vortag (kann "gebrochen" sein, wenn der heutige Bereich durchhandelt).
         if (_havePrev)
         {
-            if (_pdH) Level(context, region, cont, _pH, "pH", _cPdH, Broken(_pH, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdL) Level(context, region, cont, _pL, "pL", _cPdL, Broken(_pL, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdO) Level(context, region, cont, _pO, "pO", _cPdO, Broken(_pO, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdC) Level(context, region, cont, _pC, "pC", _cPdC, Broken(_pC, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdH) Level(context, region, cont, _pH, _lPdH, _cPdH, Broken(_pH, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdL) Level(context, region, cont, _pL, _lPdL, _cPdL, Broken(_pL, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdO) Level(context, region, cont, _pO, _lPdO, _cPdO, Broken(_pO, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdC) Level(context, region, cont, _pC, _lPdC, _cPdC, Broken(_pC, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // Aktueller Tag (Extrema koennen nicht "gebrochen" sein).
         if (_haveCur)
         {
-            if (_cdH) Level(context, region, cont, _dCurHigh, "H", _cCdH, false, _curDayStartBar);
-            if (_cdL) Level(context, region, cont, _dCurLow, "L", _cCdL, false, _curDayStartBar);
-            if (_cdO) Level(context, region, cont, _curOpen, "O", _cCdO, Broken(_curOpen, dLo, dHi, true), _curDayStartBar);
-            if (_cdEq) Level(context, region, cont, (_dCurHigh + _dCurLow) / 2m, "EQ", _cCdEq, false, _curDayStartBar);
+            if (_cdH) Level(context, region, cont, _dCurHigh, _lCdH, _cCdH, false, _curDayStartBar);
+            if (_cdL) Level(context, region, cont, _dCurLow, _lCdL, _cCdL, false, _curDayStartBar);
+            if (_cdO) Level(context, region, cont, _curOpen, _lCdO, _cCdO, Broken(_curOpen, dLo, dHi, true), _curDayStartBar);
+            if (_cdEq) Level(context, region, cont, (_dCurHigh + _dCurLow) / 2m, _lCdEq, _cCdEq, false, _curDayStartBar);
         }
 
         // Sessions H/L.
-        if (_showAsia && _sHas[0]) { Level(context, region, cont, _dSHigh[0], "Asia H", _cAsia, Broken(_dSHigh[0], dLo, dHi, haveDayRange), _sStartBar[0]); Level(context, region, cont, _dSLow[0], "Asia L", _cAsia, Broken(_dSLow[0], dLo, dHi, haveDayRange), _sStartBar[0]); }
-        if (_showEu && _sHas[1]) { Level(context, region, cont, _dSHigh[1], "EU H", _cEu, Broken(_dSHigh[1], dLo, dHi, haveDayRange), _sStartBar[1]); Level(context, region, cont, _dSLow[1], "EU L", _cEu, Broken(_dSLow[1], dLo, dHi, haveDayRange), _sStartBar[1]); }
-        if (_showUs && _sHas[2]) { Level(context, region, cont, _dSHigh[2], "US H", _cUs, Broken(_dSHigh[2], dLo, dHi, haveDayRange), _sStartBar[2]); Level(context, region, cont, _dSLow[2], "US L", _cUs, Broken(_dSLow[2], dLo, dHi, haveDayRange), _sStartBar[2]); }
+        if (_showAsia && _sHas[0]) { Level(context, region, cont, _dSHigh[0], _lAsiaH, _cAsia, Broken(_dSHigh[0], dLo, dHi, haveDayRange), _sStartBar[0]); Level(context, region, cont, _dSLow[0], _lAsiaL, _cAsia, Broken(_dSLow[0], dLo, dHi, haveDayRange), _sStartBar[0]); }
+        if (_showEu && _sHas[1]) { Level(context, region, cont, _dSHigh[1], _lEuH, _cEu, Broken(_dSHigh[1], dLo, dHi, haveDayRange), _sStartBar[1]); Level(context, region, cont, _dSLow[1], _lEuL, _cEu, Broken(_dSLow[1], dLo, dHi, haveDayRange), _sStartBar[1]); }
+        if (_showUs && _sHas[2]) { Level(context, region, cont, _dSHigh[2], _lUsH, _cUs, Broken(_dSHigh[2], dLo, dHi, haveDayRange), _sStartBar[2]); Level(context, region, cont, _dSLow[2], _lUsL, _cUs, Broken(_dSLow[2], dLo, dHi, haveDayRange), _sStartBar[2]); }
 
         // Initial Balance.
         if (_showIb && _ibHas)
         {
-            Level(context, region, cont, _dIbH, "IBH", _cIb, Broken(_dIbH, dLo, dHi, haveDayRange), _ibStartBar);
-            Level(context, region, cont, _dIbL, "IBL", _cIb, Broken(_dIbL, dLo, dHi, haveDayRange), _ibStartBar);
+            Level(context, region, cont, _dIbH, _lIbH, _cIb, Broken(_dIbH, dLo, dHi, haveDayRange), _ibStartBar);
+            Level(context, region, cont, _dIbL, _lIbL, _cIb, Broken(_dIbL, dLo, dHi, haveDayRange), _ibStartBar);
         }
 
         // Volumen-Profil Vortag (kann gebrochen sein).
         if (_pHaveVp)
         {
-            if (_pdVah) Level(context, region, cont, _pVah, "pVAH", _cPdVah, Broken(_pVah, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdVal) Level(context, region, cont, _pVal, "pVAL", _cPdVal, Broken(_pVal, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdVpoc) Level(context, region, cont, _pVpoc, "pVPOC", _cPdVpoc, Broken(_pVpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVah) Level(context, region, cont, _pVah, _lPVah, _cPdVah, Broken(_pVah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVal) Level(context, region, cont, _pVal, _lPVal, _cPdVal, Broken(_pVal, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVpoc) Level(context, region, cont, _pVpoc, _lPVpoc, _cPdVpoc, Broken(_pVpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // Volumen-Profil aktueller Tag.
         if (_dHaveVp)
         {
-            if (_cdVah) Level(context, region, cont, _dVah, "VAH", _cCdVah, false, _curDayStartBar);
-            if (_cdVal) Level(context, region, cont, _dVal, "VAL", _cCdVal, false, _curDayStartBar);
-            if (_cdVpoc) Level(context, region, cont, _dVpoc, "VPOC", _cCdVpoc, false, _curDayStartBar);
+            if (_cdVah) Level(context, region, cont, _dVah, _lCVah, _cCdVah, false, _curDayStartBar);
+            if (_cdVal) Level(context, region, cont, _dVal, _lCVal, _cCdVal, false, _curDayStartBar);
+            if (_cdVpoc) Level(context, region, cont, _dVpoc, _lCVpoc, _cCdVpoc, false, _curDayStartBar);
         }
 
         // VWAP Vortag (kann gebrochen sein).
         if (_pHaveW)
         {
-            if (_pdWpoc) Level(context, region, cont, _pWvwap, "pVWAP", _cPdWpoc, Broken(_pWvwap, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdWvah) Level(context, region, cont, _pWvah, "pWVAH", _cPdWEdge, Broken(_pWvah, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdWval) Level(context, region, cont, _pWval, "pWVAL", _cPdWEdge, Broken(_pWval, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWpoc) Level(context, region, cont, _pWvwap, _lPVwap, _cPdWpoc, Broken(_pWvwap, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWvah) Level(context, region, cont, _pWvah, _lPWvah, _cPdWEdge, Broken(_pWvah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWval) Level(context, region, cont, _pWval, _lPWval, _cPdWEdge, Broken(_pWval, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // VWAP aktueller Tag.
         if (_dHaveW)
         {
-            if (_cdWpoc) Level(context, region, cont, _dWvwap, "VWAP", _cCdWpoc, false, _curDayStartBar);
-            if (_cdWvah) Level(context, region, cont, _dWvah, "WVAH", _cCdWEdge, false, _curDayStartBar);
-            if (_cdWval) Level(context, region, cont, _dWval, "WVAL", _cCdWEdge, false, _curDayStartBar);
+            if (_cdWpoc) Level(context, region, cont, _dWvwap, _lCVwap, _cCdWpoc, false, _curDayStartBar);
+            if (_cdWvah) Level(context, region, cont, _dWvah, _lCWvah, _cCdWEdge, false, _curDayStartBar);
+            if (_cdWval) Level(context, region, cont, _dWval, _lCWval, _cCdWEdge, false, _curDayStartBar);
         }
 
         // Vorwoche OHLC (gebrochen moeglich).
         if (_havePrevWeek)
         {
-            if (_showPwH) Level(context, region, cont, _pwH, "pwH", _cWeek, Broken(_pwH, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwL) Level(context, region, cont, _pwL, "pwL", _cWeek, Broken(_pwL, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwO) Level(context, region, cont, _pwO, "pwO", _cWeek, Broken(_pwO, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwC) Level(context, region, cont, _pwC, "pwC", _cWeek, Broken(_pwC, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwH) Level(context, region, cont, _pwH, _lPwH, _cWeek, Broken(_pwH, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwL) Level(context, region, cont, _pwL, _lPwL, _cWeek, Broken(_pwL, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwO) Level(context, region, cont, _pwO, _lPwO, _cWeek, Broken(_pwO, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwC) Level(context, region, cont, _pwC, _lPwC, _cWeek, Broken(_pwC, dLo, dHi, haveDayRange), _prevWeekStartBar);
         }
         // Aktuelle Woche High/Low.
         if (_haveWeek)
         {
-            if (_showCwH) Level(context, region, cont, _dwHigh, "wH", _cCurWeek, false, _curWeekStartBar);
-            if (_showCwL) Level(context, region, cont, _dwLow, "wL", _cCurWeek, false, _curWeekStartBar);
+            if (_showCwH) Level(context, region, cont, _dwHigh, _lCwH, _cCurWeek, false, _curWeekStartBar);
+            if (_showCwL) Level(context, region, cont, _dwLow, _lCwL, _cCurWeek, false, _curWeekStartBar);
         }
 
         // Vormonat OHLC.
         if (_havePrevMonth)
         {
-            if (_showPmH) Level(context, region, cont, _pmH, "pmH", _cMonth, Broken(_pmH, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmL) Level(context, region, cont, _pmL, "pmL", _cMonth, Broken(_pmL, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmO) Level(context, region, cont, _pmO, "pmO", _cMonth, Broken(_pmO, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmC) Level(context, region, cont, _pmC, "pmC", _cMonth, Broken(_pmC, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmH) Level(context, region, cont, _pmH, _lPmH, _cMonth, Broken(_pmH, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmL) Level(context, region, cont, _pmL, _lPmL, _cMonth, Broken(_pmL, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmO) Level(context, region, cont, _pmO, _lPmO, _cMonth, Broken(_pmO, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmC) Level(context, region, cont, _pmC, _lPmC, _cMonth, Broken(_pmC, dLo, dHi, haveDayRange), _prevMonthStartBar);
         }
         // Aktueller Monat High/Low.
         if (_haveMonth)
         {
-            if (_showCmH) Level(context, region, cont, _dmHigh, "mH", _cCurMonth, false, _curMonthStartBar);
-            if (_showCmL) Level(context, region, cont, _dmLow, "mL", _cCurMonth, false, _curMonthStartBar);
+            if (_showCmH) Level(context, region, cont, _dmHigh, _lCmH, _cCurMonth, false, _curMonthStartBar);
+            if (_showCmL) Level(context, region, cont, _dmLow, _lCmL, _cCurMonth, false, _curMonthStartBar);
         }
 
         // IB-Multiples (Projektionen aus der IB-Range).
@@ -920,4 +932,92 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe Monat", GroupName = "Monat", Order = 16)]
     public Color CMonth { get => _cMonth; set { _cMonth = value; RedrawChart(); } }
+
+    // ── Beschriftung (editierbare Namen) ──
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag High", GroupName = "Vortag", Order = 1)] public string LblPdH { get => _lPdH; set { _lPdH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag Low", GroupName = "Vortag", Order = 2)] public string LblPdL { get => _lPdL; set { _lPdL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag Open", GroupName = "Vortag", Order = 3)] public string LblPdO { get => _lPdO; set { _lPdO = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag Close", GroupName = "Vortag", Order = 4)] public string LblPdC { get => _lPdC; set { _lPdC = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag High", GroupName = "Aktueller Tag", Order = 10)] public string LblCdH { get => _lCdH; set { _lCdH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag Low", GroupName = "Aktueller Tag", Order = 11)] public string LblCdL { get => _lCdL; set { _lCdL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag Open", GroupName = "Aktueller Tag", Order = 12)] public string LblCdO { get => _lCdO; set { _lCdO = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Equilibrium", GroupName = "Aktueller Tag", Order = 13)] public string LblCdEq { get => _lCdEq; set { _lCdEq = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Asia High", GroupName = "Sessions", Order = 20)] public string LblAsiaH { get => _lAsiaH; set { _lAsiaH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Asia Low", GroupName = "Sessions", Order = 21)] public string LblAsiaL { get => _lAsiaL; set { _lAsiaL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "EU High", GroupName = "Sessions", Order = 22)] public string LblEuH { get => _lEuH; set { _lEuH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "EU Low", GroupName = "Sessions", Order = 23)] public string LblEuL { get => _lEuL; set { _lEuL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "US High", GroupName = "Sessions", Order = 24)] public string LblUsH { get => _lUsH; set { _lUsH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "US Low", GroupName = "Sessions", Order = 25)] public string LblUsL { get => _lUsL; set { _lUsL = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "IB High", GroupName = "Initial Balance", Order = 30)] public string LblIbH { get => _lIbH; set { _lIbH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "IB Low", GroupName = "Initial Balance", Order = 31)] public string LblIbL { get => _lIbL; set { _lIbL = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag VAH", GroupName = "Volumen-Profil", Order = 40)] public string LblPVah { get => _lPVah; set { _lPVah = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag VAL", GroupName = "Volumen-Profil", Order = 41)] public string LblPVal { get => _lPVal; set { _lPVal = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag VPOC", GroupName = "Volumen-Profil", Order = 42)] public string LblPVpoc { get => _lPVpoc; set { _lPVpoc = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag VAH", GroupName = "Volumen-Profil", Order = 43)] public string LblCVah { get => _lCVah; set { _lCVah = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag VAL", GroupName = "Volumen-Profil", Order = 44)] public string LblCVal { get => _lCVal; set { _lCVal = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag VPOC", GroupName = "Volumen-Profil", Order = 45)] public string LblCVpoc { get => _lCVpoc; set { _lCVpoc = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag VWAP", GroupName = "VWAP", Order = 50)] public string LblPVwap { get => _lPVwap; set { _lPVwap = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag WVAH", GroupName = "VWAP", Order = 51)] public string LblPWvah { get => _lPWvah; set { _lPWvah = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vortag WVAL", GroupName = "VWAP", Order = 52)] public string LblPWval { get => _lPWval; set { _lPWval = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag VWAP", GroupName = "VWAP", Order = 53)] public string LblCVwap { get => _lCVwap; set { _lCVwap = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag WVAH", GroupName = "VWAP", Order = 54)] public string LblCWvah { get => _lCWvah; set { _lCWvah = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Tag WVAL", GroupName = "VWAP", Order = 55)] public string LblCWval { get => _lCWval; set { _lCWval = value; RedrawChart(); } }
+
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vorwoche High", GroupName = "Woche/Monat", Order = 60)] public string LblPwH { get => _lPwH; set { _lPwH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vorwoche Low", GroupName = "Woche/Monat", Order = 61)] public string LblPwL { get => _lPwL; set { _lPwL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vorwoche Open", GroupName = "Woche/Monat", Order = 62)] public string LblPwO { get => _lPwO; set { _lPwO = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vorwoche Close", GroupName = "Woche/Monat", Order = 63)] public string LblPwC { get => _lPwC; set { _lPwC = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Akt. Woche High", GroupName = "Woche/Monat", Order = 64)] public string LblCwH { get => _lCwH; set { _lCwH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Akt. Woche Low", GroupName = "Woche/Monat", Order = 65)] public string LblCwL { get => _lCwL; set { _lCwL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vormonat High", GroupName = "Woche/Monat", Order = 66)] public string LblPmH { get => _lPmH; set { _lPmH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vormonat Low", GroupName = "Woche/Monat", Order = 67)] public string LblPmL { get => _lPmL; set { _lPmL = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vormonat Open", GroupName = "Woche/Monat", Order = 68)] public string LblPmO { get => _lPmO; set { _lPmO = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Vormonat Close", GroupName = "Woche/Monat", Order = 69)] public string LblPmC { get => _lPmC; set { _lPmC = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Akt. Monat High", GroupName = "Woche/Monat", Order = 70)] public string LblCmH { get => _lCmH; set { _lCmH = value; RedrawChart(); } }
+    [Tab(TabName = "Beschriftung", TabOrder = 9)]
+    [Display(Name = "Akt. Monat Low", GroupName = "Woche/Monat", Order = 71)] public string LblCmL { get => _lCmL; set { _lCmL = value; RedrawChart(); } }
 }
