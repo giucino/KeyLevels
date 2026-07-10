@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Key Levels — Dokumentation</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    background: #14161c; color: #d7dce6;
+    font: 15px/1.6 "Segoe UI", Roboto, Arial, sans-serif;
+    max-width: 880px; margin: 0 auto; padding: 32px 24px 80px;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #fff; }
+  h2 { font-size: 20px; margin: 34px 0 10px; color: #fff; border-bottom: 1px solid #2a2e38; padding-bottom: 6px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; color: #eaeef6; }
+  .sub { color: #8b94a6; margin: 0 0 20px; }
+  code { background: #20242e; padding: 1px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; color: #e6c07b; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #2a2e38; vertical-align: top; }
+  th { color: #fff; background: #1b1e26; }
+  td:first-child { white-space: nowrap; color: #eaeef6; font-weight: 600; }
+  .note { background: #1b2530; border-left: 3px solid #4a90d9; padding: 10px 14px; border-radius: 4px; margin: 14px 0; }
+  .warn { background: #2a2118; border-left: 3px solid #d9a14a; padding: 10px 14px; border-radius: 4px; margin: 14px 0; }
+  ul { margin: 6px 0 6px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .tag { display:inline-block; font-size:12px; background:#2a2e38; color:#9fb0c8; padding:1px 8px; border-radius:10px; }
+  pre { background:#1b1e26; padding:12px 14px; border-radius:6px; color:#d7dce6; font-size:13px; overflow:auto; }
+</style>
+</head>
+<body>
+
+<h1>Key Levels</h1>
+<p class="sub">Automatische horizontale Referenz-Level für ATAS — Tag/Woche/Monat, Sessions, Initial Balance, Volumen-Profil, VWAP, TPO + Tails. Mit Master-Slave-Sync für schnelle Charts.</p>
+
+<h2>Was der Indikator macht</h2>
+<p>
+Key Levels berechnet die <strong>wichtigen Kontext-Level</strong> aus den Kerzen- und Zeitdaten und zeichnet sie als
+horizontale Linien mit Beschriftung. Es ist die <strong>Kontext-Schicht (Stufe 1)</strong> eines mehrstufigen
+Orderflow-Setups: die Level liefern die Orte, an denen Trigger-Signale Konfluenz finden. <strong>Kein Handelssignal.</strong>
+</p>
+
+<h2>Die Level</h2>
+<table>
+  <tr><th>Gruppe</th><th>Level</th></tr>
+  <tr><td>Tag</td><td>Vortag Open/High/Low/Close · aktueller Tag High/Low/Open · Equilibrium (50 %)</td></tr>
+  <tr><td>Woche / Monat</td><td>Vorwoche + Vormonat O/H/L/C · aktuelle Woche/Monat High/Low</td></tr>
+  <tr><td>Sessions</td><td>Asia / EU / US High/Low + Session-Shading (Hintergrund)</td></tr>
+  <tr><td>Initial Balance</td><td>IB High/Low + Multiples 50 / 100 / 150 / 200 %</td></tr>
+  <tr><td>Volumen-Profil</td><td>VAH / VAL / VPOC (Vortag + aktueller Tag)</td></tr>
+  <tr><td>VWAP</td><td>VWAP + Standardabweichungs-Bänder (WVAH / WVAL)</td></tr>
+  <tr><td>TPO (Market Profile)</td><td>TPOC / TVAH / TVAL + Buying / Selling Tails</td></tr>
+</table>
+<p>Jedes Level ist einzeln <strong>an-/abschaltbar</strong>, der Name <strong>editierbar</strong> und die Farbe frei wählbar.</p>
+
+<h2>Chart-agnostisch — kein Zeit-Chart nötig</h2>
+<p>
+Alle Level entstehen aus <strong>Kerzen + Zeitstempel</strong>. Volumen-Profil und VWAP kommen aus dem
+<strong>Tages-Histogramm</strong> (<code>GetAllPriceLevels</code>). Das <strong>TPO-Profil</strong> wird gebildet, indem
+jeder Bar per Zeitstempel in ein <strong>30-Min-Bracket</strong> einsortiert wird — der <em>TPO-Count</em> eines Preises
+ist die Anzahl verschiedener Brackets, die ihn berührt haben.
+</p>
+<div class="note">
+Dadurch läuft der Indikator direkt auf <strong>Tick-/Renko-Charts</strong>. Auf einem feineren Chart ist das TPO sogar
+<strong>genauer</strong> als auf einem echten 30-Min-Chart (mehr Intra-Perioden-Detail).
+</div>
+
+<h3>Buying / Selling Tails</h3>
+<p>
+Tails sind Reihen von <strong>Single Prints</strong> (TPO-Count == 1) am Rand des Profils: am <strong>unteren</strong> Rand
+= <strong>Buying Tail</strong> (Käufer-Rejection), am <strong>oberen</strong> = <strong>Selling Tail</strong>. Das gezeichnete
+Level ist die <strong>innere Kante</strong> der Reihe — die S/R-relevante Stelle. Ab <code>Min-Tail</code> Single Prints zählt es.
+</p>
+
+<h2>Zeitzonen-Offset</h2>
+<p>
+Sessions, Initial Balance und TPO nutzen einen <strong>Zeitzonen-Offset</strong> (Stunden, Default <code>+2</code>), damit die
+Zeiten der Chart-Anzeige entsprechen. Ein einfacher Zahlenwert — falls das Session-Shading verschoben ist, um ±1 anpassen,
+bis Asia/EU/US zu den echten Sessions passen. Die einzelnen Start/Ende-Zeiten müssen dann nicht mehr angefasst werden.
+</p>
+
+<h2>Darstellung</h2>
+<ul>
+  <li><strong>Linien starten am Ursprung:</strong> jede Linie beginnt dort, wo ihre Periode entstand (Tag/Woche/Monat/Session/IB-Start) und läuft nach rechts — nicht über den ganzen Chart.</li>
+  <li><strong>Labels nebeneinander:</strong> Beschriftungen auf gleicher Höhe werden horizontal versetzt (Kollisionscheck), nichts überlappt.</li>
+  <li><strong>Editierbare Namen:</strong> jedes Namensfeld sitzt direkt unter seiner Checkbox im selben Reiter.</li>
+</ul>
+
+<h2>Broken-Handling</h2>
+<p>
+Ein Level, durch das der heutige Bereich <strong>durchgehandelt</strong> hat (Preis war ober- <em>und</em> unterhalb), gilt als
+<em>broken</em>. Modi:
+</p>
+<ul>
+  <li><strong>Gestrichelt</strong> (Default) — bleibt sichtbar, gepunktet.</li>
+  <li><strong>Einfärben</strong> — dezent grau, bleibt sichtbar.</li>
+  <li><strong>Ausblenden</strong> — Linie verschwindet (Opt-in, Vorsicht: auch VPOC etc.).</li>
+  <li><strong>Normal</strong> — Broken ignorieren, alles durchgezogen.</li>
+</ul>
+<div class="note">Standardmäßig verschwindet <strong>nichts</strong> — ein durchlaufener VPOC bleibt als Referenz erhalten.</div>
+
+<h2>Master-Slave-Sync</h2>
+<p>
+Ein <strong>Master</strong>-Chart mit viel Historie berechnet die Level und <strong>publiziert</strong> sie in einen
+prozessweiten Speicher (Schlüssel = Instrument + <code>Sync-Key</code>). Beliebig viele <strong>Slave</strong>-Charts
+(schnelle Tick/Renko mit wenig Historie) <strong>spiegeln</strong> die Level live, ohne selbst zu rechnen.
+</p>
+<pre>
+Master  (z.B. NQ Daily / 60min)   Rolle = Master, Sync-Key = "A"
+Slave   (NQ Renko 24 / 900 Tick)  Rolle = Slave,  Sync-Key = "A"
+</pre>
+<div class="warn">
+Der <strong>Master-Chart muss geöffnet bleiben</strong> (er publiziert beim Rechnen). Auf dem Slave laufen die Linien über die
+volle Breite (kein Origin-Start). Nur gleiches Instrument.
+</div>
+
+<h2>Einstellungen (Reiter)</h2>
+<p>Vortag · Aktueller Tag · Sessions · Initial Balance · Volumen-Profil · VWAP · Woche/Monat · TPO · Sync · Darstellung.</p>
+<table>
+  <tr><th>Regler</th><th>Default</th></tr>
+  <tr><td>Zeitzonen-Offset</td><td>+2 Stunden</td></tr>
+  <tr><td>Value-Area %</td><td>70</td></tr>
+  <tr><td>VWAP Std-Faktor</td><td>1.0 σ</td></tr>
+  <tr><td>TPO-Periode / Min-Tail</td><td>30 Min / 2</td></tr>
+  <tr><td>IB Start / Dauer</td><td>15:30 / 60 Min</td></tr>
+  <tr><td>Broken-Modus</td><td>Gestrichelt</td></tr>
+  <tr><td>Rolle / Sync-Key</td><td>Standalone / "A"</td></tr>
+</table>
+
+<h2>Hinweise</h2>
+<ul>
+  <li>Volumen-Profil und TPO brauchen <strong>Cluster-/Footprint-Daten</strong>. Ohne diese werden sie nicht gezeichnet.</li>
+  <li>Vor-Perioden-Level werden beim Perioden­wechsel <strong>eingefroren</strong> (kein Repaint); aktuelle Perioden laufen live.</li>
+  <li>Reicht die geladene Historie nicht weit genug zurück, fehlen entsprechend alte Level — dafür ist die Master-Slave-Sync gedacht.</li>
+</ul>
+
+<p class="sub" style="margin-top:40px;">
+<span class="tag">Eigenentwicklung</span> Stufe 1 (Kontext/Struktur) eines mehrstufigen ATAS-Orderflow-Projekts. Trigger-Schicht: OrderflowSignal (Stufe 2). Kein Handelssignal, keine Anlageberatung.
+</p>
+
+</body>
+</html>
