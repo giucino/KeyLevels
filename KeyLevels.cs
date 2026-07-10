@@ -59,6 +59,7 @@ public class KeyLevels : Indicator
     private Color _cCdEq = Color.FromArgb(255, 220, 90, 220);
 
     // Sessions
+    private int _tzOffset = 2;   // Stunden auf die Kerzenzeit, damit die Zeiten der Chart-Anzeige entsprechen
     private TimeSpan _asiaStart = new TimeSpan(0, 0, 0), _asiaEnd = new TimeSpan(9, 0, 0);
     private TimeSpan _euStart = new TimeSpan(9, 0, 0), _euEnd = new TimeSpan(15, 30, 0);
     private TimeSpan _usStart = new TimeSpan(15, 30, 0), _usEnd = new TimeSpan(23, 0, 0);
@@ -130,7 +131,8 @@ public class KeyLevels : Indicator
         var c = GetCandle(bar);
         if (c == null)
             return;
-        DateTime d = c.Time.Date;
+        DateTime eff = c.Time.AddHours(_tzOffset);   // Chart-Zeit
+        DateTime d = eff.Date;
 
         if (d != _curDate)
         {
@@ -154,7 +156,7 @@ public class KeyLevels : Indicator
         }
 
         // Session-Extrema.
-        int sidx = SessionOf(c.Time.TimeOfDay);
+        int sidx = SessionOf(eff.TimeOfDay);
         if (sidx >= 0)
         {
             if (!_sHas[sidx]) { _sHigh[sidx] = c.High; _sLow[sidx] = c.Low; _sHas[sidx] = true; }
@@ -162,7 +164,7 @@ public class KeyLevels : Indicator
         }
 
         // Initial Balance (erste _ibMinutes ab _ibStart am Tag).
-        var tod = c.Time.TimeOfDay;
+        var tod = eff.TimeOfDay;
         var ibEnd = _ibStart + TimeSpan.FromMinutes(_ibMinutes);
         if (tod >= _ibStart && tod < ibEnd)
         {
@@ -182,21 +184,22 @@ public class KeyLevels : Indicator
         if (lc == null || !_haveCur)
             return;
 
-        // Nur falten, wenn der Live-Bar noch zum selben Tag gehoert.
-        if (lc.Time.Date == _curDate)
+        // Nur falten, wenn der Live-Bar noch zum selben (Chart-)Tag gehoert.
+        DateTime leff = lc.Time.AddHours(_tzOffset);
+        if (leff.Date == _curDate)
         {
             if (lc.High > _dCurHigh) _dCurHigh = lc.High;
             if (lc.Low < _dCurLow) _dCurLow = lc.Low;
             _dCurClose = lc.Close;
 
-            int sidx = SessionOf(lc.Time.TimeOfDay);
+            int sidx = SessionOf(leff.TimeOfDay);
             if (sidx >= 0)
             {
                 if (!_sHas[sidx]) { _dSHigh[sidx] = lc.High; _dSLow[sidx] = lc.Low; }
                 else { if (lc.High > _dSHigh[sidx]) _dSHigh[sidx] = lc.High; if (lc.Low < _dSLow[sidx]) _dSLow[sidx] = lc.Low; }
             }
 
-            var tod = lc.Time.TimeOfDay;
+            var tod = leff.TimeOfDay;
             var ibEnd = _ibStart + TimeSpan.FromMinutes(_ibMinutes);
             if (tod >= _ibStart && tod < ibEnd)
             {
@@ -276,7 +279,7 @@ public class KeyLevels : Indicator
             : new RenderPen(col, _lineWidth);
         ctx.DrawLine(pen, region.Left, y, region.Right, y);
 
-        string txt = $"{label} {price}";
+        string txt = label;
         var sz = ctx.MeasureString(txt, _font);
         int tx = _labelLeft ? region.Left + 3 : region.Right - sz.Width - 3;
         ctx.DrawString(txt, _font, col, tx, y - sz.Height - 1);
@@ -299,7 +302,7 @@ public class KeyLevels : Indicator
             if (b <= to)
             {
                 var c = GetCandle(b);
-                if (c != null) s = ShadeSessionOf(c.Time.TimeOfDay);
+                if (c != null) s = ShadeSessionOf(c.Time.AddHours(_tzOffset).TimeOfDay);
             }
             if (s != runSess)
             {
@@ -388,6 +391,12 @@ public class KeyLevels : Indicator
     public Color CCdEq { get => _cCdEq; set { _cCdEq = value; RedrawChart(); } }
 
     // ── Sessions ──
+    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Display(Name = "Zeitzonen-Offset (Stunden)", GroupName = "Zeiten", Order = 0,
+        Description = "Stunden, die auf die Kerzenzeit addiert werden, damit die Session-Zeiten der CHART-Anzeige entsprechen. Default 2 (Kerzenzeit 2h hinter Chart). Bei Bedarf +/- anpassen, bis das Shading zu den echten Sessions passt.")]
+    [Range(-12, 12)]
+    public int TzOffset { get => _tzOffset; set { _tzOffset = Math.Clamp(value, -12, 12); RecalculateValues(); } }
+
     [Tab(TabName = "Sessions", TabOrder = 3)]
     [Display(Name = "Asia Start", GroupName = "Zeiten", Order = 1, Description = "Chart-Zeit. Default 00:00.")]
     public TimeSpan AsiaStart { get => _asiaStart; set { _asiaStart = value; RecalculateValues(); } }
