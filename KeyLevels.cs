@@ -73,7 +73,14 @@ public class KeyLevels : Indicator
 
     private RenderFont _font;
     // Sammel-Liste je Frame: Linien zuerst, dann Labels mit Kollisionsvermeidung.
-    private readonly List<(int Y, int X1, string Label, Color Col, bool Broken)> _draws = new();
+    private readonly List<(decimal Price, int OriginBar, string Label, Color Col, bool Broken)> _levels = new();
+
+    // Master-Slave-Sync: ein Master publiziert seine Level, Slaves spiegeln sie.
+    public enum KLRole { Standalone, Master, Slave }
+    private KLRole _role = KLRole.Standalone;
+    private string _syncKey = "A";
+    private static readonly object _sharedLock = new();
+    private static readonly Dictionary<string, List<(decimal Price, string Label, Color Col, bool Broken)>> _shared = new();
 
     // ─────────────────────────────────────────────────────────────────
     //  SETTINGS-FELDER
@@ -494,102 +501,115 @@ public class KeyLevels : Indicator
         if (_font == null || ChartInfo?.PriceChartContainer is not { } cont)
             return;
         var region = cont.Region;
-
+        _levels.Clear();
         DrawSessionShading(context, cont, region);
+        if (_role == KLRole.Slave)
+            BuildSlaveLevels();
+        else
+        {
+            CollectLocalLevels();
+            if (_role == KLRole.Master)
+                PublishLevels();
+        }
+        FlushLevels(context, cont, region);
+    }
 
+    // Sammelt alle lokal berechneten Level (Master/Standalone).
+    private void CollectLocalLevels()
+    {
         bool haveDayRange = _haveCur;
         decimal dLo = haveDayRange ? _dCurLow : 0m, dHi = haveDayRange ? _dCurHigh : 0m;
 
         // Vortag (kann "gebrochen" sein, wenn der heutige Bereich durchhandelt).
         if (_havePrev)
         {
-            if (_pdH) Level(context, region, cont, _pH, _lPdH, _cPdH, Broken(_pH, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdL) Level(context, region, cont, _pL, _lPdL, _cPdL, Broken(_pL, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdO) Level(context, region, cont, _pO, _lPdO, _cPdO, Broken(_pO, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdC) Level(context, region, cont, _pC, _lPdC, _cPdC, Broken(_pC, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdH) Level(_pH, _lPdH, _cPdH, Broken(_pH, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdL) Level(_pL, _lPdL, _cPdL, Broken(_pL, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdO) Level(_pO, _lPdO, _cPdO, Broken(_pO, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdC) Level(_pC, _lPdC, _cPdC, Broken(_pC, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // Aktueller Tag (Extrema koennen nicht "gebrochen" sein).
         if (_haveCur)
         {
-            if (_cdH) Level(context, region, cont, _dCurHigh, _lCdH, _cCdH, false, _curDayStartBar);
-            if (_cdL) Level(context, region, cont, _dCurLow, _lCdL, _cCdL, false, _curDayStartBar);
-            if (_cdO) Level(context, region, cont, _curOpen, _lCdO, _cCdO, Broken(_curOpen, dLo, dHi, true), _curDayStartBar);
-            if (_cdEq) Level(context, region, cont, (_dCurHigh + _dCurLow) / 2m, _lCdEq, _cCdEq, false, _curDayStartBar);
+            if (_cdH) Level(_dCurHigh, _lCdH, _cCdH, false, _curDayStartBar);
+            if (_cdL) Level(_dCurLow, _lCdL, _cCdL, false, _curDayStartBar);
+            if (_cdO) Level(_curOpen, _lCdO, _cCdO, Broken(_curOpen, dLo, dHi, true), _curDayStartBar);
+            if (_cdEq) Level((_dCurHigh + _dCurLow) / 2m, _lCdEq, _cCdEq, false, _curDayStartBar);
         }
 
         // Sessions H/L.
-        if (_showAsia && _sHas[0]) { Level(context, region, cont, _dSHigh[0], _lAsiaH, _cAsia, Broken(_dSHigh[0], dLo, dHi, haveDayRange), _sStartBar[0]); Level(context, region, cont, _dSLow[0], _lAsiaL, _cAsia, Broken(_dSLow[0], dLo, dHi, haveDayRange), _sStartBar[0]); }
-        if (_showEu && _sHas[1]) { Level(context, region, cont, _dSHigh[1], _lEuH, _cEu, Broken(_dSHigh[1], dLo, dHi, haveDayRange), _sStartBar[1]); Level(context, region, cont, _dSLow[1], _lEuL, _cEu, Broken(_dSLow[1], dLo, dHi, haveDayRange), _sStartBar[1]); }
-        if (_showUs && _sHas[2]) { Level(context, region, cont, _dSHigh[2], _lUsH, _cUs, Broken(_dSHigh[2], dLo, dHi, haveDayRange), _sStartBar[2]); Level(context, region, cont, _dSLow[2], _lUsL, _cUs, Broken(_dSLow[2], dLo, dHi, haveDayRange), _sStartBar[2]); }
+        if (_showAsia && _sHas[0]) { Level(_dSHigh[0], _lAsiaH, _cAsia, Broken(_dSHigh[0], dLo, dHi, haveDayRange), _sStartBar[0]); Level(_dSLow[0], _lAsiaL, _cAsia, Broken(_dSLow[0], dLo, dHi, haveDayRange), _sStartBar[0]); }
+        if (_showEu && _sHas[1]) { Level(_dSHigh[1], _lEuH, _cEu, Broken(_dSHigh[1], dLo, dHi, haveDayRange), _sStartBar[1]); Level(_dSLow[1], _lEuL, _cEu, Broken(_dSLow[1], dLo, dHi, haveDayRange), _sStartBar[1]); }
+        if (_showUs && _sHas[2]) { Level(_dSHigh[2], _lUsH, _cUs, Broken(_dSHigh[2], dLo, dHi, haveDayRange), _sStartBar[2]); Level(_dSLow[2], _lUsL, _cUs, Broken(_dSLow[2], dLo, dHi, haveDayRange), _sStartBar[2]); }
 
         // Initial Balance.
         if (_showIb && _ibHas)
         {
-            Level(context, region, cont, _dIbH, _lIbH, _cIb, Broken(_dIbH, dLo, dHi, haveDayRange), _ibStartBar);
-            Level(context, region, cont, _dIbL, _lIbL, _cIb, Broken(_dIbL, dLo, dHi, haveDayRange), _ibStartBar);
+            Level(_dIbH, _lIbH, _cIb, Broken(_dIbH, dLo, dHi, haveDayRange), _ibStartBar);
+            Level(_dIbL, _lIbL, _cIb, Broken(_dIbL, dLo, dHi, haveDayRange), _ibStartBar);
         }
 
         // Volumen-Profil Vortag (kann gebrochen sein).
         if (_pHaveVp)
         {
-            if (_pdVah) Level(context, region, cont, _pVah, _lPVah, _cPdVah, Broken(_pVah, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdVal) Level(context, region, cont, _pVal, _lPVal, _cPdVal, Broken(_pVal, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdVpoc) Level(context, region, cont, _pVpoc, _lPVpoc, _cPdVpoc, Broken(_pVpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVah) Level(_pVah, _lPVah, _cPdVah, Broken(_pVah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVal) Level(_pVal, _lPVal, _cPdVal, Broken(_pVal, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdVpoc) Level(_pVpoc, _lPVpoc, _cPdVpoc, Broken(_pVpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // Volumen-Profil aktueller Tag.
         if (_dHaveVp)
         {
-            if (_cdVah) Level(context, region, cont, _dVah, _lCVah, _cCdVah, false, _curDayStartBar);
-            if (_cdVal) Level(context, region, cont, _dVal, _lCVal, _cCdVal, false, _curDayStartBar);
-            if (_cdVpoc) Level(context, region, cont, _dVpoc, _lCVpoc, _cCdVpoc, false, _curDayStartBar);
+            if (_cdVah) Level(_dVah, _lCVah, _cCdVah, false, _curDayStartBar);
+            if (_cdVal) Level(_dVal, _lCVal, _cCdVal, false, _curDayStartBar);
+            if (_cdVpoc) Level(_dVpoc, _lCVpoc, _cCdVpoc, false, _curDayStartBar);
         }
 
         // VWAP Vortag (kann gebrochen sein).
         if (_pHaveW)
         {
-            if (_pdWpoc) Level(context, region, cont, _pWvwap, _lPVwap, _cPdWpoc, Broken(_pWvwap, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdWvah) Level(context, region, cont, _pWvah, _lPWvah, _cPdWEdge, Broken(_pWvah, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pdWval) Level(context, region, cont, _pWval, _lPWval, _cPdWEdge, Broken(_pWval, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWpoc) Level(_pWvwap, _lPVwap, _cPdWpoc, Broken(_pWvwap, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWvah) Level(_pWvah, _lPWvah, _cPdWEdge, Broken(_pWvah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pdWval) Level(_pWval, _lPWval, _cPdWEdge, Broken(_pWval, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
 
         // VWAP aktueller Tag.
         if (_dHaveW)
         {
-            if (_cdWpoc) Level(context, region, cont, _dWvwap, _lCVwap, _cCdWpoc, false, _curDayStartBar);
-            if (_cdWvah) Level(context, region, cont, _dWvah, _lCWvah, _cCdWEdge, false, _curDayStartBar);
-            if (_cdWval) Level(context, region, cont, _dWval, _lCWval, _cCdWEdge, false, _curDayStartBar);
+            if (_cdWpoc) Level(_dWvwap, _lCVwap, _cCdWpoc, false, _curDayStartBar);
+            if (_cdWvah) Level(_dWvah, _lCWvah, _cCdWEdge, false, _curDayStartBar);
+            if (_cdWval) Level(_dWval, _lCWval, _cCdWEdge, false, _curDayStartBar);
         }
 
         // Vorwoche OHLC (gebrochen moeglich).
         if (_havePrevWeek)
         {
-            if (_showPwH) Level(context, region, cont, _pwH, _lPwH, _cWeek, Broken(_pwH, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwL) Level(context, region, cont, _pwL, _lPwL, _cWeek, Broken(_pwL, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwO) Level(context, region, cont, _pwO, _lPwO, _cWeek, Broken(_pwO, dLo, dHi, haveDayRange), _prevWeekStartBar);
-            if (_showPwC) Level(context, region, cont, _pwC, _lPwC, _cWeek, Broken(_pwC, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwH) Level(_pwH, _lPwH, _cWeek, Broken(_pwH, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwL) Level(_pwL, _lPwL, _cWeek, Broken(_pwL, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwO) Level(_pwO, _lPwO, _cWeek, Broken(_pwO, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_showPwC) Level(_pwC, _lPwC, _cWeek, Broken(_pwC, dLo, dHi, haveDayRange), _prevWeekStartBar);
         }
         // Aktuelle Woche High/Low.
         if (_haveWeek)
         {
-            if (_showCwH) Level(context, region, cont, _dwHigh, _lCwH, _cCurWeek, false, _curWeekStartBar);
-            if (_showCwL) Level(context, region, cont, _dwLow, _lCwL, _cCurWeek, false, _curWeekStartBar);
+            if (_showCwH) Level(_dwHigh, _lCwH, _cCurWeek, false, _curWeekStartBar);
+            if (_showCwL) Level(_dwLow, _lCwL, _cCurWeek, false, _curWeekStartBar);
         }
 
         // Vormonat OHLC.
         if (_havePrevMonth)
         {
-            if (_showPmH) Level(context, region, cont, _pmH, _lPmH, _cMonth, Broken(_pmH, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmL) Level(context, region, cont, _pmL, _lPmL, _cMonth, Broken(_pmL, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmO) Level(context, region, cont, _pmO, _lPmO, _cMonth, Broken(_pmO, dLo, dHi, haveDayRange), _prevMonthStartBar);
-            if (_showPmC) Level(context, region, cont, _pmC, _lPmC, _cMonth, Broken(_pmC, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmH) Level(_pmH, _lPmH, _cMonth, Broken(_pmH, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmL) Level(_pmL, _lPmL, _cMonth, Broken(_pmL, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmO) Level(_pmO, _lPmO, _cMonth, Broken(_pmO, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_showPmC) Level(_pmC, _lPmC, _cMonth, Broken(_pmC, dLo, dHi, haveDayRange), _prevMonthStartBar);
         }
         // Aktueller Monat High/Low.
         if (_haveMonth)
         {
-            if (_showCmH) Level(context, region, cont, _dmHigh, _lCmH, _cCurMonth, false, _curMonthStartBar);
-            if (_showCmL) Level(context, region, cont, _dmLow, _lCmL, _cCurMonth, false, _curMonthStartBar);
+            if (_showCmH) Level(_dmHigh, _lCmH, _cCurMonth, false, _curMonthStartBar);
+            if (_showCmL) Level(_dmLow, _lCmL, _cCurMonth, false, _curMonthStartBar);
         }
 
         // IB-Multiples (Projektionen aus der IB-Range).
@@ -598,66 +618,81 @@ public class KeyLevels : Indicator
             decimal r = _dIbH - _dIbL;
             if (r > 0)
             {
-                if (_ibM50) { Level(context, region, cont, _dIbH + 0.5m * r, "IB+50", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 0.5m * r, "IB-50", _cIbMult, false, _ibStartBar); }
-                if (_ibM100) { Level(context, region, cont, _dIbH + 1.0m * r, "IB+100", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 1.0m * r, "IB-100", _cIbMult, false, _ibStartBar); }
-                if (_ibM150) { Level(context, region, cont, _dIbH + 1.5m * r, "IB+150", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 1.5m * r, "IB-150", _cIbMult, false, _ibStartBar); }
-                if (_ibM200) { Level(context, region, cont, _dIbH + 2.0m * r, "IB+200", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 2.0m * r, "IB-200", _cIbMult, false, _ibStartBar); }
+                if (_ibM50) { Level(_dIbH + 0.5m * r, "IB+50", _cIbMult, false, _ibStartBar); Level(_dIbL - 0.5m * r, "IB-50", _cIbMult, false, _ibStartBar); }
+                if (_ibM100) { Level(_dIbH + 1.0m * r, "IB+100", _cIbMult, false, _ibStartBar); Level(_dIbL - 1.0m * r, "IB-100", _cIbMult, false, _ibStartBar); }
+                if (_ibM150) { Level(_dIbH + 1.5m * r, "IB+150", _cIbMult, false, _ibStartBar); Level(_dIbL - 1.5m * r, "IB-150", _cIbMult, false, _ibStartBar); }
+                if (_ibM200) { Level(_dIbH + 2.0m * r, "IB+200", _cIbMult, false, _ibStartBar); Level(_dIbL - 2.0m * r, "IB-200", _cIbMult, false, _ibStartBar); }
             }
         }
 
         // TPO Vortag (gebrochen moeglich).
         if (_pHaveTpo)
         {
-            if (_pTpPoc) Level(context, region, cont, _pTpoc, _lPTpoc, _cPTpo, Broken(_pTpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pTpVah) Level(context, region, cont, _pTvah, _lPTvah, _cPTpo, Broken(_pTvah, dLo, dHi, haveDayRange), _prevDayStartBar);
-            if (_pTpVal) Level(context, region, cont, _pTval, _lPTval, _cPTpo, Broken(_pTval, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pTpPoc) Level(_pTpoc, _lPTpoc, _cPTpo, Broken(_pTpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pTpVah) Level(_pTvah, _lPTvah, _cPTpo, Broken(_pTvah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pTpVal) Level(_pTval, _lPTval, _cPTpo, Broken(_pTval, dLo, dHi, haveDayRange), _prevDayStartBar);
         }
-        if (_pTpBt && _pHaveBt) Level(context, region, cont, _pBt, _lPBt, _cPTail, Broken(_pBt, dLo, dHi, haveDayRange), _prevDayStartBar);
-        if (_pTpSt && _pHaveSt) Level(context, region, cont, _pSt, _lPSt, _cPTail, Broken(_pSt, dLo, dHi, haveDayRange), _prevDayStartBar);
+        if (_pTpBt && _pHaveBt) Level(_pBt, _lPBt, _cPTail, Broken(_pBt, dLo, dHi, haveDayRange), _prevDayStartBar);
+        if (_pTpSt && _pHaveSt) Level(_pSt, _lPSt, _cPTail, Broken(_pSt, dLo, dHi, haveDayRange), _prevDayStartBar);
 
         // TPO aktueller Tag.
         if (_dHaveTpo)
         {
-            if (_cTpPoc) Level(context, region, cont, _dTpoc, _lCTpoc, _cCTpo, false, _curDayStartBar);
-            if (_cTpVah) Level(context, region, cont, _dTvah, _lCTvah, _cCTpo, false, _curDayStartBar);
-            if (_cTpVal) Level(context, region, cont, _dTval, _lCTval, _cCTpo, false, _curDayStartBar);
+            if (_cTpPoc) Level(_dTpoc, _lCTpoc, _cCTpo, false, _curDayStartBar);
+            if (_cTpVah) Level(_dTvah, _lCTvah, _cCTpo, false, _curDayStartBar);
+            if (_cTpVal) Level(_dTval, _lCTval, _cCTpo, false, _curDayStartBar);
         }
-        if (_cTpBt && _dHaveBt) Level(context, region, cont, _dBt, _lCBt, _cCTail, false, _curDayStartBar);
-        if (_cTpSt && _dHaveSt) Level(context, region, cont, _dSt, _lCSt, _cCTail, false, _curDayStartBar);
-
-        // Linien + kollisionsfreie Labels zeichnen.
-        FlushLevels(context, region);
+        if (_cTpBt && _dHaveBt) Level(_dBt, _lCBt, _cCTail, false, _curDayStartBar);
+        if (_cTpSt && _dHaveSt) Level(_dSt, _lCSt, _cCTail, false, _curDayStartBar);
     }
 
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
         => have && level > lo && level < hi;   // heutiger Bereich hat das Level durchhandelt
 
-    private void Level(RenderContext ctx, Rectangle region, IChartContainer cont, decimal price, string label, Color col, bool broken, int originBar)
+    // Master-Slave-Sync.
+    private string SyncKey() => (InstrumentInfo?.Instrument ?? "") + "|" + _syncKey;
+
+    private void PublishLevels()
     {
-        int y;
-        try { y = cont.GetYByPrice(price, false); }
-        catch { return; }
-        if (y < region.Top - 2 || y > region.Bottom + 2)
-            return;
-
-        // Linie startet am Origin-Bar (wo die Periode begann) und laeuft nach rechts.
-        int x1 = region.Left;
-        if (originBar >= 0)
-        {
-            try { int ox = cont.GetXByBar(originBar, false); if (ox > x1) x1 = ox; }
-            catch { }
-        }
-        if (x1 > region.Right)
-            x1 = region.Left;   // Origin liegt rechts vom sichtbaren Bereich
-
-        _draws.Add((y, x1, label, col, broken));
+        var snap = _levels.Select(l => (l.Price, l.Label, l.Col, l.Broken)).ToList();
+        lock (_sharedLock) { _shared[SyncKey()] = snap; }
     }
 
-    // Erst alle Linien, dann Labels mit Kollisionsvermeidung: Labels auf gleicher Hoehe
-    // werden nebeneinander versetzt, statt uebereinander (Lesbarkeit).
-    private void FlushLevels(RenderContext ctx, Rectangle region)
+    private void BuildSlaveLevels()
     {
-        foreach (var d in _draws)
+        List<(decimal Price, string Label, Color Col, bool Broken)> snap = null;
+        lock (_sharedLock) { _shared.TryGetValue(SyncKey(), out snap); }
+        if (snap == null) return;
+        foreach (var s in snap)
+            _levels.Add((s.Price, -1, s.Label, s.Col, s.Broken));   // OriginBar -1 = volle Breite
+    }
+
+    // Sammelt ein Level (preisbasiert) fuer diesen Frame.
+    private void Level(decimal price, string label, Color col, bool broken, int originBar)
+        => _levels.Add((price, originBar, label, col, broken));
+
+    // Rechnet Screen-Koordinaten (Preis->Y, Origin-Bar->X), zeichnet Linien und danach
+    // Labels mit Kollisionsvermeidung (gleiche Hoehe -> nebeneinander).
+    private void FlushLevels(RenderContext ctx, IChartContainer cont, Rectangle region)
+    {
+        var items = new List<(int Y, int X1, string Label, Color Col, bool Broken)>();
+        foreach (var lv in _levels)
+        {
+            int y;
+            try { y = cont.GetYByPrice(lv.Price, false); }
+            catch { continue; }
+            if (y < region.Top - 2 || y > region.Bottom + 2) continue;
+            int x1 = region.Left;
+            if (lv.OriginBar >= 0)
+            {
+                try { int ox = cont.GetXByBar(lv.OriginBar, false); if (ox > x1) x1 = ox; }
+                catch { }
+            }
+            if (x1 > region.Right) x1 = region.Left;
+            items.Add((y, x1, lv.Label, lv.Col, lv.Broken));
+        }
+
+        foreach (var d in items)
         {
             var pen = d.Broken && _brokenDotted
                 ? new RenderPen(d.Col, _lineWidth, System.Drawing.Drawing2D.DashStyle.Dot)
@@ -667,7 +702,7 @@ public class KeyLevels : Indicator
 
         var occupied = new List<Rectangle>();
         const int gap = 4;
-        foreach (var d in _draws.OrderBy(x => x.Y).ThenBy(x => x.X1))
+        foreach (var d in items.OrderBy(x => x.Y).ThenBy(x => x.X1))
         {
             var sz = ctx.MeasureString(d.Label, _font);
             int w = sz.Width, h = sz.Height;
@@ -684,7 +719,7 @@ public class KeyLevels : Indicator
             ctx.DrawString(d.Label, _font, d.Col, tx, ty);
             occupied.Add(rect);
         }
-        _draws.Clear();
+        _levels.Clear();
     }
 
     // Session-Hintergrund als vertikale Baender (zusammenhaengende Bars gleicher Session).
@@ -1170,4 +1205,15 @@ public class KeyLevels : Indicator
     [Display(Name = "Farbe TPO", GroupName = "Aktueller Tag", Order = 60)] public Color CCTpo { get => _cCTpo; set { _cCTpo = value; RedrawChart(); } }
     [Tab(TabName = "TPO", TabOrder = 10)]
     [Display(Name = "Farbe Tails", GroupName = "Aktueller Tag", Order = 61)] public Color CCTail { get => _cCTail; set { _cCTail = value; RedrawChart(); } }
+
+    // ── Sync (Master-Slave) ──
+    [Tab(TabName = "Sync", TabOrder = 11)]
+    [Display(Name = "Rolle", GroupName = "Master-Slave", Order = 1,
+        Description = "Standalone = rechnet + zeichnet lokal (Default). Master = rechnet + publiziert die Level (auf einem Chart mit viel Historie laden). Slave = rechnet NICHT selbst, spiegelt die Level des Masters (fuer schnelle Tick/Renko-Charts mit wenig Historie).")]
+    public KLRole Role { get => _role; set { _role = value; RecalculateValues(); RedrawChart(); } }
+
+    [Tab(TabName = "Sync", TabOrder = 11)]
+    [Display(Name = "Sync-Key", GroupName = "Master-Slave", Order = 2,
+        Description = "Verbindet einen Master mit seinen Slaves. Master und Slave(s) desselben Instruments mit GLEICHEM Key teilen die Level. Verschiedene Keys = getrennte Gruppen. Master-Chart muss geoeffnet bleiben.")]
+    public string SyncKeyStr { get => _syncKey; set { _syncKey = value; RedrawChart(); } }
 }
