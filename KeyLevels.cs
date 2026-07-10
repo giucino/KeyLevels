@@ -39,6 +39,11 @@ public class KeyLevels : Indicator
     private readonly decimal[] _dSLow = new decimal[3];
     private decimal _dIbH, _dIbL;
 
+    // Volumen-Profil (Value Area) — Histogramm Preis->Volumen fuer den aktuellen Tag.
+    private readonly Dictionary<decimal, decimal> _curVol = new();
+    private decimal _pVah, _pVal, _pVpoc; private bool _pHaveVp;   // Vortag
+    private decimal _dVah, _dVal, _dVpoc; private bool _dHaveVp;   // aktueller Tag (Anzeige)
+
     private RenderFont _font;
 
     // ─────────────────────────────────────────────────────────────────
@@ -75,6 +80,17 @@ public class KeyLevels : Indicator
     private TimeSpan _ibStart = new TimeSpan(15, 30, 0);
     private int _ibMinutes = 60;
     private Color _cIb = Color.FromArgb(255, 1, 158, 226);
+
+    // Volumen-Profil
+    private int _valueAreaPct = 70;
+    private bool _pdVah = true, _pdVal = true, _pdVpoc = true;
+    private bool _cdVah = true, _cdVal = true, _cdVpoc = true;
+    private Color _cPdVah = Color.FromArgb(255, 123, 171, 123);
+    private Color _cPdVal = Color.FromArgb(255, 123, 171, 123);
+    private Color _cPdVpoc = Color.FromArgb(255, 255, 180, 60);
+    private Color _cCdVah = Color.FromArgb(255, 90, 180, 220);
+    private Color _cCdVal = Color.FromArgb(255, 90, 180, 220);
+    private Color _cCdVpoc = Color.FromArgb(255, 255, 140, 0);
 
     // Darstellung
     private int _fontSize = 9;
@@ -123,6 +139,8 @@ public class KeyLevels : Indicator
         _haveCur = _havePrev = false;
         for (int i = 0; i < 3; i++) { _sHas[i] = false; _sHigh[i] = 0; _sLow[i] = 0; }
         _ibHas = false;
+        _curVol.Clear();
+        _pHaveVp = _dHaveVp = false;
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -141,12 +159,15 @@ public class KeyLevels : Indicator
             {
                 _pO = _curOpen; _pH = _curHigh; _pL = _curLow; _pC = _curClose;
                 _havePrev = true;
+                // Vortag-Volumen-Profil aus dem abgeschlossenen Tag.
+                _pHaveVp = ComputeVA(_curVol, out _pVpoc, out _pVah, out _pVal);
             }
             _curDate = d;
             _curOpen = c.Open; _curHigh = c.High; _curLow = c.Low; _curClose = c.Close;
             _haveCur = true;
             for (int i = 0; i < 3; i++) _sHas[i] = false;
             _ibHas = false;
+            _curVol.Clear();
         }
         else
         {
@@ -171,6 +192,10 @@ public class KeyLevels : Indicator
             if (!_ibHas) { _ibH = c.High; _ibL = c.Low; _ibHas = true; }
             else { if (c.High > _ibH) _ibH = c.High; if (c.Low < _ibL) _ibL = c.Low; }
         }
+
+        // Volumen je Preislevel in das Tages-Histogramm (fuer die Value Area).
+        foreach (var pv in c.GetAllPriceLevels())
+            _curVol[pv.Price] = (_curVol.TryGetValue(pv.Price, out var v) ? v : 0m) + pv.Volume;
     }
 
     // Anzeige-Werte = Committed-State + Live-Bar (CurrentBar-1) eingefaltet.
@@ -179,6 +204,9 @@ public class KeyLevels : Indicator
         _dCurHigh = _curHigh; _dCurLow = _curLow; _dCurClose = _curClose;
         for (int i = 0; i < 3; i++) { _dSHigh[i] = _sHigh[i]; _dSLow[i] = _sLow[i]; }
         _dIbH = _ibH; _dIbL = _ibL;
+
+        // Aktuelles-Tag-Volumen-Profil (aus committed Histogramm; 1 Bar Lag, vernachlaessigbar).
+        _dHaveVp = ComputeVA(_curVol, out _dVpoc, out _dVah, out _dVal);
 
         var lc = GetCandle(CurrentBar - 1);
         if (lc == null || !_haveCur)
@@ -207,6 +235,50 @@ public class KeyLevels : Indicator
                 else { if (lc.High > _dIbH) _dIbH = lc.High; if (lc.Low < _dIbL) _dIbL = lc.Low; }
             }
         }
+    }
+
+    // Value Area aus einem Preis->Volumen-Histogramm: POC (max Volumen) + beidseitige
+    // Expansion, bis _valueAreaPct des Gesamtvolumens erfasst sind (Market-Profile-Standard).
+    private bool ComputeVA(Dictionary<decimal, decimal> hist, out decimal poc, out decimal vah, out decimal val)
+    {
+        poc = vah = val = 0m;
+        if (hist.Count == 0)
+            return false;
+        var prices = new List<decimal>(hist.Keys);
+        prices.Sort();
+        decimal total = 0m, maxV = -1m; int pocI = 0;
+        for (int i = 0; i < prices.Count; i++)
+        {
+            decimal v = hist[prices[i]];
+            total += v;
+            if (v > maxV) { maxV = v; pocI = i; }
+        }
+        if (total <= 0m)
+            return false;
+        poc = prices[pocI];
+        decimal target = total * (_valueAreaPct / 100m);
+        decimal acc = hist[prices[pocI]];
+        int lo = pocI, hi = pocI;
+        while (acc < target && (lo > 0 || hi < prices.Count - 1))
+        {
+            decimal below = lo > 0 ? hist[prices[lo - 1]] : -1m;
+            decimal above = hi < prices.Count - 1 ? hist[prices[hi + 1]] : -1m;
+            if (above >= below)
+            {
+                if (hi < prices.Count - 1) { hi++; acc += hist[prices[hi]]; }
+                else if (lo > 0) { lo--; acc += hist[prices[lo]]; }
+                else break;
+            }
+            else
+            {
+                if (lo > 0) { lo--; acc += hist[prices[lo]]; }
+                else if (hi < prices.Count - 1) { hi++; acc += hist[prices[hi]]; }
+                else break;
+            }
+        }
+        val = prices[lo];
+        vah = prices[hi];
+        return true;
     }
 
     // Session-Index fuer eine Uhrzeit (angenommen Start < Ende, kein Mitternachts-Wrap).
@@ -260,6 +332,22 @@ public class KeyLevels : Indicator
         {
             Level(context, region, cont, _dIbH, "IBH", _cIb, Broken(_dIbH, dLo, dHi, haveDayRange));
             Level(context, region, cont, _dIbL, "IBL", _cIb, Broken(_dIbL, dLo, dHi, haveDayRange));
+        }
+
+        // Volumen-Profil Vortag (kann gebrochen sein).
+        if (_pHaveVp)
+        {
+            if (_pdVah) Level(context, region, cont, _pVah, "pVAH", _cPdVah, Broken(_pVah, dLo, dHi, haveDayRange));
+            if (_pdVal) Level(context, region, cont, _pVal, "pVAL", _cPdVal, Broken(_pVal, dLo, dHi, haveDayRange));
+            if (_pdVpoc) Level(context, region, cont, _pVpoc, "pVPOC", _cPdVpoc, Broken(_pVpoc, dLo, dHi, haveDayRange));
+        }
+
+        // Volumen-Profil aktueller Tag.
+        if (_dHaveVp)
+        {
+            if (_cdVah) Level(context, region, cont, _dVah, "VAH", _cCdVah, false);
+            if (_cdVal) Level(context, region, cont, _dVal, "VAL", _cCdVal, false);
+            if (_cdVpoc) Level(context, region, cont, _dVpoc, "VPOC", _cCdVpoc, false);
         }
     }
 
@@ -477,4 +565,42 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Darstellung", TabOrder = 5)]
     [Display(Name = "Gebrochene Level gestrichelt", GroupName = "Darstellung", Order = 4, Description = "Level, durch die der heutige Bereich schon gehandelt hat, gepunktet zeichnen.")]
     public bool BrokenDotted { get => _brokenDotted; set { _brokenDotted = value; RedrawChart(); } }
+
+    // ── Volumen-Profil ──
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Value-Area Anteil (%)", GroupName = "Allgemein", Order = 1, Description = "Anteil des Tagesvolumens in der Value Area (Standard 70). VAH/VAL = Raender, VPOC = Preis mit max. Volumen.")]
+    [Range(30, 95)]
+    public int ValueAreaPct { get => _valueAreaPct; set { _valueAreaPct = Math.Clamp(value, 30, 95); RecalculateValues(); } }
+
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Vortag VAH", GroupName = "Vortag", Order = 10)]
+    public bool PdVah { get => _pdVah; set { _pdVah = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Vortag VAL", GroupName = "Vortag", Order = 11)]
+    public bool PdVal { get => _pdVal; set { _pdVal = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Vortag VPOC", GroupName = "Vortag", Order = 12)]
+    public bool PdVpoc { get => _pdVpoc; set { _pdVpoc = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Farbe VAH/VAL", GroupName = "Vortag", Order = 13)]
+    public Color CPdVaEdge { get => _cPdVah; set { _cPdVah = value; _cPdVal = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Farbe VPOC", GroupName = "Vortag", Order = 14)]
+    public Color CPdVpoc { get => _cPdVpoc; set { _cPdVpoc = value; RedrawChart(); } }
+
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Aktueller Tag VAH", GroupName = "Aktueller Tag", Order = 20)]
+    public bool CdVah { get => _cdVah; set { _cdVah = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Aktueller Tag VAL", GroupName = "Aktueller Tag", Order = 21)]
+    public bool CdVal { get => _cdVal; set { _cdVal = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Aktueller Tag VPOC", GroupName = "Aktueller Tag", Order = 22)]
+    public bool CdVpoc { get => _cdVpoc; set { _cdVpoc = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Farbe VAH/VAL", GroupName = "Aktueller Tag", Order = 23)]
+    public Color CCdVaEdge { get => _cCdVah; set { _cCdVah = value; _cCdVal = value; RedrawChart(); } }
+    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
+    [Display(Name = "Farbe VPOC", GroupName = "Aktueller Tag", Order = 24)]
+    public Color CCdVpoc { get => _cCdVpoc; set { _cCdVpoc = value; RedrawChart(); } }
 }
