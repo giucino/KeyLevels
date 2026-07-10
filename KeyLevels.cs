@@ -167,7 +167,10 @@ public class KeyLevels : Indicator
     private int _fontSize = 9;
     private int _lineWidth = 1;
     private bool _labelLeft = true;
-    private bool _brokenDotted = true;
+    public enum KLBroken { Gestrichelt, Ausblenden, Normal }
+    private KLBroken _brokenMode = KLBroken.Gestrichelt;
+    private bool _brokenUseColor = false;
+    private Color _brokenColor = Color.FromArgb(255, 150, 150, 150);
 
     // Editierbare Level-Namen (Default = Kuerzel)
     private string _lPdH = "pH", _lPdL = "pL", _lPdO = "pO", _lPdC = "pC";
@@ -678,6 +681,8 @@ public class KeyLevels : Indicator
         var items = new List<(int Y, int X1, string Label, Color Col, bool Broken)>();
         foreach (var lv in _levels)
         {
+            // Broken-Level nur ausblenden, wenn der User das ausdruecklich will (Opt-in).
+            if (lv.Broken && _brokenMode == KLBroken.Ausblenden) continue;
             int y;
             try { y = cont.GetYByPrice(lv.Price, false); }
             catch { continue; }
@@ -689,12 +694,13 @@ public class KeyLevels : Indicator
                 catch { }
             }
             if (x1 > region.Right) x1 = region.Left;
-            items.Add((y, x1, lv.Label, lv.Col, lv.Broken));
+            var col = (lv.Broken && _brokenUseColor) ? _brokenColor : lv.Col;
+            items.Add((y, x1, lv.Label, col, lv.Broken));
         }
 
         foreach (var d in items)
         {
-            var pen = d.Broken && _brokenDotted
+            var pen = d.Broken && _brokenMode == KLBroken.Gestrichelt
                 ? new RenderPen(d.Col, _lineWidth, System.Drawing.Drawing2D.DashStyle.Dot)
                 : new RenderPen(d.Col, _lineWidth);
             ctx.DrawLine(pen, d.X1, d.Y, region.Right, d.Y);
@@ -928,8 +934,16 @@ public class KeyLevels : Indicator
     [Display(Name = "Label links (aus = rechts)", GroupName = "Darstellung", Order = 3)]
     public bool LabelLeft { get => _labelLeft; set { _labelLeft = value; RedrawChart(); } }
     [Tab(TabName = "Darstellung", TabOrder = 5)]
-    [Display(Name = "Gebrochene Level gestrichelt", GroupName = "Darstellung", Order = 4, Description = "Level, durch die der heutige Bereich schon gehandelt hat, gepunktet zeichnen.")]
-    public bool BrokenDotted { get => _brokenDotted; set { _brokenDotted = value; RedrawChart(); } }
+    [Display(Name = "Broken-Modus", GroupName = "Broken (durchgehandelt)", Order = 4,
+        Description = "Wie mit Leveln umgehen, durch die der heutige Bereich schon durchgehandelt hat (Preis war ober- UND unterhalb). Gestrichelt = sichtbar, gepunktet (Default). Ausblenden = Linie verschwindet (Opt-in, Vorsicht: auch VPOC etc. weg). Normal = ignorieren, immer durchgezogen.")]
+    public KLBroken BrokenModus { get => _brokenMode; set { _brokenMode = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Broken einfaerben", GroupName = "Broken (durchgehandelt)", Order = 5,
+        Description = "An = durchgehandelte Level werden in der Broken-Farbe (statt ihrer eigenen) gezeichnet, bleiben aber sichtbar. Zum dezenten Abheben ohne sie zu verlieren.")]
+    public bool BrokenUseColor { get => _brokenUseColor; set { _brokenUseColor = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Broken-Farbe", GroupName = "Broken (durchgehandelt)", Order = 6)]
+    public Color BrokenColor { get => _brokenColor; set { _brokenColor = value; RedrawChart(); } }
 
     // ── Volumen-Profil ──
     [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
