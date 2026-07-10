@@ -44,6 +44,10 @@ public class KeyLevels : Indicator
     private decimal _pVah, _pVal, _pVpoc; private bool _pHaveVp;   // Vortag
     private decimal _dVah, _dVal, _dVpoc; private bool _dHaveVp;   // aktueller Tag (Anzeige)
 
+    // VWAP + Standardabweichungs-Baender (aus demselben Tages-Histogramm).
+    private decimal _pWvwap, _pWvah, _pWval; private bool _pHaveW;
+    private decimal _dWvwap, _dWvah, _dWval; private bool _dHaveW;
+
     private RenderFont _font;
 
     // ─────────────────────────────────────────────────────────────────
@@ -91,6 +95,15 @@ public class KeyLevels : Indicator
     private Color _cCdVah = Color.FromArgb(255, 90, 180, 220);
     private Color _cCdVal = Color.FromArgb(255, 90, 180, 220);
     private Color _cCdVpoc = Color.FromArgb(255, 255, 140, 0);
+
+    // VWAP
+    private decimal _wStdFactor = 1.0m;
+    private bool _pdWvah = true, _pdWval = true, _pdWpoc = true;
+    private bool _cdWvah = true, _cdWval = true, _cdWpoc = true;
+    private Color _cPdWEdge = Color.FromArgb(255, 160, 110, 230);
+    private Color _cPdWpoc = Color.FromArgb(255, 210, 130, 255);
+    private Color _cCdWEdge = Color.FromArgb(255, 130, 160, 255);
+    private Color _cCdWpoc = Color.FromArgb(255, 245, 245, 245);
 
     // Darstellung
     private int _fontSize = 9;
@@ -141,6 +154,7 @@ public class KeyLevels : Indicator
         _ibHas = false;
         _curVol.Clear();
         _pHaveVp = _dHaveVp = false;
+        _pHaveW = _dHaveW = false;
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -161,6 +175,9 @@ public class KeyLevels : Indicator
                 _havePrev = true;
                 // Vortag-Volumen-Profil aus dem abgeschlossenen Tag.
                 _pHaveVp = ComputeVA(_curVol, out _pVpoc, out _pVah, out _pVal);
+                // Vortag-VWAP + Baender.
+                _pHaveW = ComputeVWAP(_curVol, out _pWvwap, out var pSig);
+                if (_pHaveW) { _pWvah = _pWvwap + _wStdFactor * pSig; _pWval = _pWvwap - _wStdFactor * pSig; }
             }
             _curDate = d;
             _curOpen = c.Open; _curHigh = c.High; _curLow = c.Low; _curClose = c.Close;
@@ -207,6 +224,9 @@ public class KeyLevels : Indicator
 
         // Aktuelles-Tag-Volumen-Profil (aus committed Histogramm; 1 Bar Lag, vernachlaessigbar).
         _dHaveVp = ComputeVA(_curVol, out _dVpoc, out _dVah, out _dVal);
+        // Aktueller-Tag-VWAP + Baender.
+        _dHaveW = ComputeVWAP(_curVol, out _dWvwap, out var dSig);
+        if (_dHaveW) { _dWvah = _dWvwap + _wStdFactor * dSig; _dWval = _dWvwap - _wStdFactor * dSig; }
 
         var lc = GetCandle(CurrentBar - 1);
         if (lc == null || !_haveCur)
@@ -281,6 +301,26 @@ public class KeyLevels : Indicator
         return true;
     }
 
+    // Volumen-gewichteter VWAP + Standardabweichung aus dem Preis->Volumen-Histogramm.
+    private static bool ComputeVWAP(Dictionary<decimal, decimal> hist, out decimal vwap, out decimal sigma)
+    {
+        vwap = sigma = 0m;
+        decimal vol = 0m, pv = 0m, pv2 = 0m;
+        foreach (var kv in hist)
+        {
+            vol += kv.Value;
+            pv += kv.Key * kv.Value;
+            pv2 += kv.Key * kv.Key * kv.Value;
+        }
+        if (vol <= 0m)
+            return false;
+        vwap = pv / vol;
+        decimal variance = pv2 / vol - vwap * vwap;
+        if (variance < 0m) variance = 0m;
+        sigma = (decimal)Math.Sqrt((double)variance);
+        return true;
+    }
+
     // Session-Index fuer eine Uhrzeit (angenommen Start < Ende, kein Mitternachts-Wrap).
     private int SessionOf(TimeSpan t)
     {
@@ -348,6 +388,22 @@ public class KeyLevels : Indicator
             if (_cdVah) Level(context, region, cont, _dVah, "VAH", _cCdVah, false);
             if (_cdVal) Level(context, region, cont, _dVal, "VAL", _cCdVal, false);
             if (_cdVpoc) Level(context, region, cont, _dVpoc, "VPOC", _cCdVpoc, false);
+        }
+
+        // VWAP Vortag (kann gebrochen sein).
+        if (_pHaveW)
+        {
+            if (_pdWpoc) Level(context, region, cont, _pWvwap, "pVWAP", _cPdWpoc, Broken(_pWvwap, dLo, dHi, haveDayRange));
+            if (_pdWvah) Level(context, region, cont, _pWvah, "pWVAH", _cPdWEdge, Broken(_pWvah, dLo, dHi, haveDayRange));
+            if (_pdWval) Level(context, region, cont, _pWval, "pWVAL", _cPdWEdge, Broken(_pWval, dLo, dHi, haveDayRange));
+        }
+
+        // VWAP aktueller Tag.
+        if (_dHaveW)
+        {
+            if (_cdWpoc) Level(context, region, cont, _dWvwap, "VWAP", _cCdWpoc, false);
+            if (_cdWvah) Level(context, region, cont, _dWvah, "WVAH", _cCdWEdge, false);
+            if (_cdWval) Level(context, region, cont, _dWval, "WVAL", _cCdWEdge, false);
         }
     }
 
@@ -603,4 +659,42 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
     [Display(Name = "Farbe VPOC", GroupName = "Aktueller Tag", Order = 24)]
     public Color CCdVpoc { get => _cCdVpoc; set { _cCdVpoc = value; RedrawChart(); } }
+
+    // ── VWAP ──
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Std-Faktor (Baender)", GroupName = "Allgemein", Order = 1, Description = "VWAP-Baender = VWAP +/- Faktor * Standardabweichung. 1.0 = 1 Sigma. VWAP + sigma aus dem Tages-Histogramm.")]
+    [Range(0.1, 5.0)]
+    public decimal WStdFactor { get => _wStdFactor; set { _wStdFactor = Math.Clamp(value, 0.1m, 5.0m); RecalculateValues(); } }
+
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Vortag VWAP (POC)", GroupName = "Vortag", Order = 10)]
+    public bool PdWpoc { get => _pdWpoc; set { _pdWpoc = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Vortag WVAH (+sigma)", GroupName = "Vortag", Order = 11)]
+    public bool PdWvah { get => _pdWvah; set { _pdWvah = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Vortag WVAL (-sigma)", GroupName = "Vortag", Order = 12)]
+    public bool PdWval { get => _pdWval; set { _pdWval = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Farbe VWAP", GroupName = "Vortag", Order = 13)]
+    public Color CPdWpoc { get => _cPdWpoc; set { _cPdWpoc = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Farbe Baender", GroupName = "Vortag", Order = 14)]
+    public Color CPdWEdge { get => _cPdWEdge; set { _cPdWEdge = value; RedrawChart(); } }
+
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Aktueller Tag VWAP (POC)", GroupName = "Aktueller Tag", Order = 20)]
+    public bool CdWpoc { get => _cdWpoc; set { _cdWpoc = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Aktueller Tag WVAH", GroupName = "Aktueller Tag", Order = 21)]
+    public bool CdWvah { get => _cdWvah; set { _cdWvah = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Aktueller Tag WVAL", GroupName = "Aktueller Tag", Order = 22)]
+    public bool CdWval { get => _cdWval; set { _cdWval = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Farbe VWAP", GroupName = "Aktueller Tag", Order = 23)]
+    public Color CCdWpoc { get => _cCdWpoc; set { _cCdWpoc = value; RedrawChart(); } }
+    [Tab(TabName = "VWAP", TabOrder = 7)]
+    [Display(Name = "Farbe Baender", GroupName = "Aktueller Tag", Order = 24)]
+    public Color CCdWEdge { get => _cCdWEdge; set { _cCdWEdge = value; RedrawChart(); } }
 }
