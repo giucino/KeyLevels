@@ -755,6 +755,56 @@ public class KeyLevels : Indicator
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
         => have && level > lo && level < hi;   // heutiger Bereich hat das Level durchhandelt
 
+    // Preset-State: Snapshot der Enables vor Aktivierung, damit Abwaehlen wiederherstellt.
+    private bool[] _presetSnapshot;
+    private bool _presetMinimal, _presetVoll;
+
+    private bool[] CaptureEnables() => new[] {
+        _pdH,_pdL,_pdO,_pdC, _cdH,_cdL,_cdO,_cdEq,
+        _showAsia,_showEu,_showUs,_shadeAsia,_shadeEu,_shadeUs,
+        _showIb,_ibM50,_ibM100,_ibM150,_ibM200,
+        _pdVah,_pdVal,_pdVpoc,_cdVah,_cdVal,_cdVpoc,
+        _pdWpoc,_pdWvah,_pdWval,_cdWpoc,_cdWvah,_cdWval,
+        _showPwH,_showPwL,_showPwO,_showPwC,_showCwH,_showCwL,
+        _showPmH,_showPmL,_showPmO,_showPmC,_showCmH,_showCmL,
+        _pTpPoc,_pTpVah,_pTpVal,_pTpBt,_pTpSt,_cTpPoc,_cTpVah,_cTpVal,_cTpBt,_cTpSt,
+        _pwVpocOn,_pwVahOn,_pwValOn,_dwVpocOn,_dwVahOn,_dwValOn,
+        _pmVpocOn,_pmVahOn,_pmValOn,_dmVpocOn,_dmVahOn,_dmValOn,
+        _pwVwapOn,_dwVwapOn,_pmVwapOn,_dmVwapOn,_wVwapBands,_mVwapBands
+    };
+
+    private void RestoreEnables(bool[] s)
+    {
+        if (s == null || s.Length < 71) return;
+        int i = 0;
+        _pdH=s[i++];_pdL=s[i++];_pdO=s[i++];_pdC=s[i++]; _cdH=s[i++];_cdL=s[i++];_cdO=s[i++];_cdEq=s[i++];
+        _showAsia=s[i++];_showEu=s[i++];_showUs=s[i++];_shadeAsia=s[i++];_shadeEu=s[i++];_shadeUs=s[i++];
+        _showIb=s[i++];_ibM50=s[i++];_ibM100=s[i++];_ibM150=s[i++];_ibM200=s[i++];
+        _pdVah=s[i++];_pdVal=s[i++];_pdVpoc=s[i++];_cdVah=s[i++];_cdVal=s[i++];_cdVpoc=s[i++];
+        _pdWpoc=s[i++];_pdWvah=s[i++];_pdWval=s[i++];_cdWpoc=s[i++];_cdWvah=s[i++];_cdWval=s[i++];
+        _showPwH=s[i++];_showPwL=s[i++];_showPwO=s[i++];_showPwC=s[i++];_showCwH=s[i++];_showCwL=s[i++];
+        _showPmH=s[i++];_showPmL=s[i++];_showPmO=s[i++];_showPmC=s[i++];_showCmH=s[i++];_showCmL=s[i++];
+        _pTpPoc=s[i++];_pTpVah=s[i++];_pTpVal=s[i++];_pTpBt=s[i++];_pTpSt=s[i++];_cTpPoc=s[i++];_cTpVah=s[i++];_cTpVal=s[i++];_cTpBt=s[i++];_cTpSt=s[i++];
+        _pwVpocOn=s[i++];_pwVahOn=s[i++];_pwValOn=s[i++];_dwVpocOn=s[i++];_dwVahOn=s[i++];_dwValOn=s[i++];
+        _pmVpocOn=s[i++];_pmVahOn=s[i++];_pmValOn=s[i++];_dmVpocOn=s[i++];_dmVahOn=s[i++];_dmValOn=s[i++];
+        _pwVwapOn=s[i++];_dwVwapOn=s[i++];_pmVwapOn=s[i++];_dmVwapOn=s[i++];_wVwapBands=s[i++];_mVwapBands=s[i++];
+    }
+
+    // Preset-Umschaltung: 0 = keins (Snapshot wiederherstellen), 1 = Minimal, 2 = Voll.
+    private void SetPreset(int target)
+    {
+        int cur = _presetMinimal ? 1 : _presetVoll ? 2 : 0;
+        if (cur == target) return;
+        if (cur == 0 && target != 0)
+            _presetSnapshot = CaptureEnables();   // Zustand vor dem ersten Preset merken
+        _presetMinimal = target == 1;
+        _presetVoll = target == 2;
+        if (target == 1) ApplyPreset(false);
+        else if (target == 2) ApplyPreset(true);
+        else { RestoreEnables(_presetSnapshot); _presetSnapshot = null; }
+        RedrawChart();
+    }
+
     // Preset: alles an (Voll) bzw. nur die wichtigsten Level (Minimal).
     private void ApplyPreset(bool full)
     {
@@ -1097,11 +1147,11 @@ public class KeyLevels : Indicator
     public bool ShowPrice { get => _showPrice; set { _showPrice = value; RedrawChart(); } }
 
     [Tab(TabName = "Darstellung", TabOrder = 5)]
-    [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 20, Description = "Nur die wichtigsten Level anzeigen (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Rest aus.")]
-    public bool PresetMinimal { get => false; set { if (value) ApplyPreset(false); } }
+    [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 20, Description = "Nur die wichtigsten Level (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Haken wieder weg = vorheriger Zustand zurueck.")]
+    public bool PresetMinimal { get => _presetMinimal; set { SetPreset(value ? 1 : 0); } }
     [Tab(TabName = "Darstellung", TabOrder = 5)]
-    [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 21, Description = "Alle Level einschalten.")]
-    public bool PresetVoll { get => false; set { if (value) ApplyPreset(true); } }
+    [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 21, Description = "Alle Level einschalten. Haken wieder weg = vorheriger Zustand zurueck.")]
+    public bool PresetVoll { get => _presetVoll; set { SetPreset(value ? 2 : 0); } }
 
     // ── Volumen-Profil ──
     [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
