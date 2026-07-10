@@ -816,46 +816,46 @@ public class KeyLevels : Indicator
 
     // ── Woche / Monat ──
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vorwoche High", GroupName = "Vorwoche", Order = 1)]
+    [Display(Name = "Vorwoche High", GroupName = "Woche", Order = 1)]
     public bool ShowPwH { get => _showPwH; set { _showPwH = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vorwoche Low", GroupName = "Vorwoche", Order = 2)]
+    [Display(Name = "Vorwoche Low", GroupName = "Woche", Order = 2)]
     public bool ShowPwL { get => _showPwL; set { _showPwL = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vorwoche Open", GroupName = "Vorwoche", Order = 3)]
+    [Display(Name = "Vorwoche Open", GroupName = "Woche", Order = 3)]
     public bool ShowPwO { get => _showPwO; set { _showPwO = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vorwoche Close", GroupName = "Vorwoche", Order = 4)]
+    [Display(Name = "Vorwoche Close", GroupName = "Woche", Order = 4)]
     public bool ShowPwC { get => _showPwC; set { _showPwC = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Akt. Woche High", GroupName = "Vorwoche", Order = 5)]
+    [Display(Name = "Akt. Woche High", GroupName = "Aktuelle Woche/Monat", Order = 40)]
     public bool ShowCwH { get => _showCwH; set { _showCwH = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Akt. Woche Low", GroupName = "Vorwoche", Order = 6)]
+    [Display(Name = "Akt. Woche Low", GroupName = "Aktuelle Woche/Monat", Order = 41)]
     public bool ShowCwL { get => _showCwL; set { _showCwL = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Farbe Woche", GroupName = "Vorwoche", Order = 7)]
+    [Display(Name = "Farbe Woche", GroupName = "Woche", Order = 7)]
     public Color CWeek { get => _cWeek; set { _cWeek = value; RedrawChart(); } }
 
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vormonat High", GroupName = "Vormonat", Order = 10)]
+    [Display(Name = "Vormonat High", GroupName = "Monat", Order = 10)]
     public bool ShowPmH { get => _showPmH; set { _showPmH = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vormonat Low", GroupName = "Vormonat", Order = 11)]
+    [Display(Name = "Vormonat Low", GroupName = "Monat", Order = 11)]
     public bool ShowPmL { get => _showPmL; set { _showPmL = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vormonat Open", GroupName = "Vormonat", Order = 12)]
+    [Display(Name = "Vormonat Open", GroupName = "Monat", Order = 12)]
     public bool ShowPmO { get => _showPmO; set { _showPmO = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Vormonat Close", GroupName = "Vormonat", Order = 13)]
+    [Display(Name = "Vormonat Close", GroupName = "Monat", Order = 13)]
     public bool ShowPmC { get => _showPmC; set { _showPmC = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Akt. Monat High", GroupName = "Vormonat", Order = 14)]
+    [Display(Name = "Akt. Monat High", GroupName = "Aktuelle Woche/Monat", Order = 42)]
     public bool ShowCmH { get => _showCmH; set { _showCmH = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Akt. Monat Low", GroupName = "Vormonat", Order = 15)]
+    [Display(Name = "Akt. Monat Low", GroupName = "Aktuelle Woche/Monat", Order = 43)]
     public bool ShowCmL { get => _showCmL; set { _showCmL = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
-    [Display(Name = "Farbe Monat", GroupName = "Vormonat", Order = 16)]
+    [Display(Name = "Farbe Monat", GroupName = "Monat", Order = 16)]
     public Color CMonth { get => _cMonth; set { _cMonth = value; RedrawChart(); } }
 }
