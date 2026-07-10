@@ -193,6 +193,11 @@ public class KeyLevels : Indicator
     private KLBroken _brokenMode = KLBroken.Gestrichelt;
     private bool _brokenUseColor = false;
     private Color _brokenColor = Color.FromArgb(255, 150, 150, 150);
+    public enum KLLineStyle { Durchgezogen, Gestrichelt, Gepunktet }
+    private KLLineStyle _lineStyle = KLLineStyle.Durchgezogen;
+    private bool _labelBox = false;
+    private Color _labelBoxColor = Color.FromArgb(170, 18, 20, 26);
+    private bool _showPrice = false;
 
     // Editierbare Level-Namen (Default = Kuerzel)
     private string _lPdH = "pH", _lPdL = "pL", _lPdO = "pO", _lPdC = "pC";
@@ -750,6 +755,36 @@ public class KeyLevels : Indicator
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
         => have && level > lo && level < hi;   // heutiger Bereich hat das Level durchhandelt
 
+    // Preset: alles an (Voll) bzw. nur die wichtigsten Level (Minimal).
+    private void ApplyPreset(bool full)
+    {
+        _pdH = _pdL = _pdO = _pdC = full;
+        _cdH = _cdL = _cdO = _cdEq = full;
+        _showAsia = _showEu = _showUs = full;
+        _shadeAsia = _shadeEu = _shadeUs = full;
+        _showIb = full; _ibM50 = _ibM100 = _ibM150 = _ibM200 = full;
+        _pdVah = _pdVal = _pdVpoc = _cdVah = _cdVal = _cdVpoc = full;
+        _pdWpoc = _pdWvah = _pdWval = _cdWpoc = _cdWvah = _cdWval = full;
+        _showPwH = _showPwL = _showPwO = _showPwC = _showCwH = _showCwL = full;
+        _showPmH = _showPmL = _showPmO = _showPmC = _showCmH = _showCmL = full;
+        _pTpPoc = _pTpVah = _pTpVal = _pTpBt = _pTpSt = _cTpPoc = _cTpVah = _cTpVal = _cTpBt = _cTpSt = full;
+        _pwVpocOn = _pwVahOn = _pwValOn = _dwVpocOn = _dwVahOn = _dwValOn = full;
+        _pmVpocOn = _pmVahOn = _pmValOn = _dmVpocOn = _dmVahOn = _dmValOn = full;
+        _pwVwapOn = _dwVwapOn = _pmVwapOn = _dmVwapOn = full;
+        _wVwapBands = _mVwapBands = full;
+
+        if (!full)   // Minimal: nur die Schluessel-Level einschalten
+        {
+            _pdH = _pdL = true;           // Vortag H/L
+            _cdH = _cdL = true;           // Tag H/L
+            _pdVpoc = _cdVpoc = true;     // VPOC Vortag + heute
+            _pdWpoc = _cdWpoc = true;     // VWAP Vortag + heute
+            _pwVpocOn = _pmVpocOn = true; // Wochen-/Monats-VPOC
+            _showIb = true;              // Initial Balance
+        }
+        RedrawChart();
+    }
+
     // Master-Slave-Sync.
     private string SyncKey() => (InstrumentInfo?.Instrument ?? "") + "|" + _syncKey;
 
@@ -793,15 +828,18 @@ public class KeyLevels : Indicator
             }
             if (x1 > region.Right) x1 = region.Left;
             var col = (lv.Broken && _brokenUseColor) ? _brokenColor : lv.Col;
-            items.Add((y, x1, lv.Label, col, lv.Broken));
+            string lbl = _showPrice ? $"{lv.Label} {lv.Price}" : lv.Label;
+            items.Add((y, x1, lbl, col, lv.Broken));
         }
 
+        var baseStyle = _lineStyle == KLLineStyle.Gestrichelt ? System.Drawing.Drawing2D.DashStyle.Dash
+                      : _lineStyle == KLLineStyle.Gepunktet ? System.Drawing.Drawing2D.DashStyle.Dot
+                      : System.Drawing.Drawing2D.DashStyle.Solid;
         foreach (var d in items)
         {
-            var pen = d.Broken && _brokenMode == KLBroken.Gestrichelt
-                ? new RenderPen(d.Col, _lineWidth, System.Drawing.Drawing2D.DashStyle.Dot)
-                : new RenderPen(d.Col, _lineWidth);
-            ctx.DrawLine(pen, d.X1, d.Y, region.Right, d.Y);
+            // Broken (im Modus Gestrichelt) ueberschreibt den Linienstil auf gepunktet.
+            var ds = d.Broken && _brokenMode == KLBroken.Gestrichelt ? System.Drawing.Drawing2D.DashStyle.Dot : baseStyle;
+            ctx.DrawLine(new RenderPen(d.Col, _lineWidth, ds), d.X1, d.Y, region.Right, d.Y);
         }
 
         var occupied = new List<Rectangle>();
@@ -820,6 +858,8 @@ public class KeyLevels : Indicator
                 else tx = occupied.Where(o => o.IntersectsWith(rect)).Min(o => o.Left) - w - gap;
                 rect = new Rectangle(tx, ty, w, h);
             }
+            if (_labelBox)
+                ctx.FillRectangle(_labelBoxColor, new Rectangle(tx - 2, ty, w + 4, h));
             ctx.DrawString(d.Label, _font, d.Col, tx, ty);
             occupied.Add(rect);
         }
@@ -1042,6 +1082,26 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Darstellung", TabOrder = 5)]
     [Display(Name = "Broken-Farbe", GroupName = "Broken (durchgehandelt)", Order = 6)]
     public Color BrokenColor { get => _brokenColor; set { _brokenColor = value; RedrawChart(); } }
+
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Linienstil", GroupName = "Darstellung", Order = 10, Description = "Stil aller Level-Linien. Gebrochene Level bleiben (im Broken-Modus Gestrichelt) gepunktet.")]
+    public KLLineStyle LineStyle { get => _lineStyle; set { _lineStyle = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Label-Hintergrundbox", GroupName = "Darstellung", Order = 11, Description = "Halbtransparente Box hinter jedem Label -> besser lesbar ueber Kerzen.")]
+    public bool LabelBox { get => _labelBox; set { _labelBox = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Label-Box Farbe", GroupName = "Darstellung", Order = 12)]
+    public Color LabelBoxColor { get => _labelBoxColor; set { _labelBoxColor = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Preis im Label", GroupName = "Darstellung", Order = 13, Description = "An = der Preis wird an den Level-Namen angehaengt (z.B. 'pH 20345.25').")]
+    public bool ShowPrice { get => _showPrice; set { _showPrice = value; RedrawChart(); } }
+
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 20, Description = "Nur die wichtigsten Level anzeigen (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Rest aus.")]
+    public bool PresetMinimal { get => false; set { if (value) ApplyPreset(false); } }
+    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 21, Description = "Alle Level einschalten.")]
+    public bool PresetVoll { get => false; set { if (value) ApplyPreset(true); } }
 
     // ── Volumen-Profil ──
     [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
