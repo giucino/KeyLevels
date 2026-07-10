@@ -59,6 +59,18 @@ public class KeyLevels : Indicator
     private decimal _pVah, _pVal, _pVpoc; private bool _pHaveVp;   // Vortag
     private decimal _dVah, _dVal, _dVpoc; private bool _dHaveVp;   // aktueller Tag (Anzeige)
 
+    // Wochen-/Monats-Volumen-Profil + VWAP (eigene Histogramme).
+    private readonly Dictionary<decimal, decimal> _curVolWeek = new();
+    private readonly Dictionary<decimal, decimal> _curVolMonth = new();
+    private decimal _pwVpoc, _pwVah, _pwVal; private bool _pwHaveVp;   // Vorwoche VP
+    private decimal _dwVpoc, _dwVah, _dwVal; private bool _dwHaveVp;   // akt. Woche VP
+    private decimal _pmVpoc, _pmVah, _pmVal; private bool _pmHaveVp;   // Vormonat VP
+    private decimal _dmVpoc, _dmVah, _dmVal; private bool _dmHaveVp;   // akt. Monat VP
+    private decimal _pwVwap, _pwWvah, _pwWval; private bool _pwHaveW;  // Vorwoche VWAP
+    private decimal _dwVwap, _dwWvah, _dwWval; private bool _dwHaveW;  // akt. Woche VWAP
+    private decimal _pmVwap, _pmWvah, _pmWval; private bool _pmHaveW;  // Vormonat VWAP
+    private decimal _dmVwap, _dmWvah, _dmWval; private bool _dmHaveW;  // akt. Monat VWAP
+
     // VWAP + Standardabweichungs-Baender (aus demselben Tages-Histogramm).
     private decimal _pWvwap, _pWvah, _pWval; private bool _pHaveW;
     private decimal _dWvwap, _dWvah, _dWval; private bool _dHaveW;
@@ -151,6 +163,16 @@ public class KeyLevels : Indicator
     private bool _ibM50 = true, _ibM100 = true, _ibM150 = false, _ibM200 = false;
     private Color _cIbMult = Color.FromArgb(255, 120, 170, 200);
 
+    // Wochen-/Monats-Profil + VWAP (Enable je Level, Farbe je Gruppe; Labels fix)
+    private bool _pwVpocOn = true, _pwVahOn = false, _pwValOn = false, _dwVpocOn = true, _dwVahOn = false, _dwValOn = false;
+    private bool _pmVpocOn = true, _pmVahOn = false, _pmValOn = false, _dmVpocOn = true, _dmVahOn = false, _dmValOn = false;
+    private bool _pwVwapOn = true, _dwVwapOn = true, _pmVwapOn = true, _dmVwapOn = true;
+    private bool _wVwapBands = false, _mVwapBands = false;   // Baender (WVAH/WVAL) fuer Woche/Monat
+    private Color _cWeekVp = Color.FromArgb(255, 120, 200, 160);
+    private Color _cMonthVp = Color.FromArgb(255, 120, 160, 210);
+    private Color _cWeekVwap = Color.FromArgb(255, 200, 150, 240);
+    private Color _cMonthVwap = Color.FromArgb(255, 150, 150, 235);
+
     // TPO
     private int _tpoPeriodMin = 30;
     private int _tpoMinTail = 2;
@@ -235,6 +257,9 @@ public class KeyLevels : Indicator
         for (int i = 0; i < 3; i++) _sStartBar[i] = -1;
         _tpoCount.Clear(); _tpoLastBr.Clear();
         _pHaveTpo = _dHaveTpo = _pHaveBt = _pHaveSt = _dHaveBt = _dHaveSt = false;
+        _curVolWeek.Clear(); _curVolMonth.Clear();
+        _pwHaveVp = _dwHaveVp = _pmHaveVp = _dmHaveVp = false;
+        _pwHaveW = _dwHaveW = _pmHaveW = _dmHaveW = false;
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -302,6 +327,8 @@ public class KeyLevels : Indicator
         {
             decimal p = pv.Price;
             _curVol[p] = (_curVol.TryGetValue(p, out var v) ? v : 0m) + pv.Volume;
+            _curVolWeek[p] = (_curVolWeek.TryGetValue(p, out var vw) ? vw : 0m) + pv.Volume;
+            _curVolMonth[p] = (_curVolMonth.TryGetValue(p, out var vm) ? vm : 0m) + pv.Volume;
             // Preis pro Bracket nur einmal zaehlen (TPO-Count = Anzahl verschiedener Brackets).
             if (!_tpoLastBr.TryGetValue(p, out var lb) || lb != br)
             {
@@ -314,8 +341,15 @@ public class KeyLevels : Indicator
         DateTime wk = MondayOf(eff.Date);
         if (wk != _curWeekKey)
         {
-            if (_haveWeek) { _pwO = _wOpen; _pwH = _wHigh; _pwL = _wLow; _pwC = _wClose; _havePrevWeek = true; _prevWeekStartBar = _curWeekStartBar; }
+            if (_haveWeek)
+            {
+                _pwO = _wOpen; _pwH = _wHigh; _pwL = _wLow; _pwC = _wClose; _havePrevWeek = true; _prevWeekStartBar = _curWeekStartBar;
+                _pwHaveVp = ComputeVA(_curVolWeek, out _pwVpoc, out _pwVah, out _pwVal);
+                _pwHaveW = ComputeVWAP(_curVolWeek, out _pwVwap, out var s1);
+                if (_pwHaveW) { _pwWvah = _pwVwap + _wStdFactor * s1; _pwWval = _pwVwap - _wStdFactor * s1; }
+            }
             _curWeekKey = wk; _wOpen = c.Open; _wHigh = c.High; _wLow = c.Low; _haveWeek = true; _curWeekStartBar = bar;
+            _curVolWeek.Clear();
         }
         else { if (c.High > _wHigh) _wHigh = c.High; if (c.Low < _wLow) _wLow = c.Low; }
         _wClose = c.Close;
@@ -324,8 +358,15 @@ public class KeyLevels : Indicator
         DateTime mo = new DateTime(eff.Year, eff.Month, 1);
         if (mo != _curMonthKey)
         {
-            if (_haveMonth) { _pmO = _mOpen; _pmH = _mHigh; _pmL = _mLow; _pmC = _mClose; _havePrevMonth = true; _prevMonthStartBar = _curMonthStartBar; }
+            if (_haveMonth)
+            {
+                _pmO = _mOpen; _pmH = _mHigh; _pmL = _mLow; _pmC = _mClose; _havePrevMonth = true; _prevMonthStartBar = _curMonthStartBar;
+                _pmHaveVp = ComputeVA(_curVolMonth, out _pmVpoc, out _pmVah, out _pmVal);
+                _pmHaveW = ComputeVWAP(_curVolMonth, out _pmVwap, out var s2);
+                if (_pmHaveW) { _pmWvah = _pmVwap + _wStdFactor * s2; _pmWval = _pmVwap - _wStdFactor * s2; }
+            }
             _curMonthKey = mo; _mOpen = c.Open; _mHigh = c.High; _mLow = c.Low; _haveMonth = true; _curMonthStartBar = bar;
+            _curVolMonth.Clear();
         }
         else { if (c.High > _mHigh) _mHigh = c.High; if (c.Low < _mLow) _mLow = c.Low; }
         _mClose = c.Close;
@@ -351,6 +392,14 @@ public class KeyLevels : Indicator
         // Aktueller-Tag-TPO + Tails (aus committed Bracket-Zaehlung).
         _dHaveTpo = ComputeTpo(out _dTpoc, out _dTvah, out _dTval);
         ComputeTails(out _dBt, out _dHaveBt, out _dSt, out _dHaveSt);
+
+        // Aktuelle Woche/Monat VP + VWAP.
+        _dwHaveVp = ComputeVA(_curVolWeek, out _dwVpoc, out _dwVah, out _dwVal);
+        _dwHaveW = ComputeVWAP(_curVolWeek, out _dwVwap, out var ws);
+        if (_dwHaveW) { _dwWvah = _dwVwap + _wStdFactor * ws; _dwWval = _dwVwap - _wStdFactor * ws; }
+        _dmHaveVp = ComputeVA(_curVolMonth, out _dmVpoc, out _dmVah, out _dmVal);
+        _dmHaveW = ComputeVWAP(_curVolMonth, out _dmVwap, out var ms);
+        if (_dmHaveW) { _dmWvah = _dmVwap + _wStdFactor * ms; _dmWval = _dmVwap - _wStdFactor * ms; }
 
         var lc = GetCandle(CurrentBar - 1);
         if (lc == null || !_haveCur)
@@ -647,6 +696,55 @@ public class KeyLevels : Indicator
         }
         if (_cTpBt && _dHaveBt) Level(_dBt, _lCBt, _cCTail, false, _curDayStartBar);
         if (_cTpSt && _dHaveSt) Level(_dSt, _lCSt, _cCTail, false, _curDayStartBar);
+
+        // Wochen-Volumen-Profil.
+        if (_pwHaveVp)
+        {
+            if (_pwVpocOn) Level(_pwVpoc, "pwVPOC", _cWeekVp, Broken(_pwVpoc, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_pwVahOn) Level(_pwVah, "pwVAH", _cWeekVp, Broken(_pwVah, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_pwValOn) Level(_pwVal, "pwVAL", _cWeekVp, Broken(_pwVal, dLo, dHi, haveDayRange), _prevWeekStartBar);
+        }
+        if (_dwHaveVp)
+        {
+            if (_dwVpocOn) Level(_dwVpoc, "wVPOC", _cWeekVp, false, _curWeekStartBar);
+            if (_dwVahOn) Level(_dwVah, "wVAH", _cWeekVp, false, _curWeekStartBar);
+            if (_dwValOn) Level(_dwVal, "wVAL", _cWeekVp, false, _curWeekStartBar);
+        }
+        // Monats-Volumen-Profil.
+        if (_pmHaveVp)
+        {
+            if (_pmVpocOn) Level(_pmVpoc, "pmVPOC", _cMonthVp, Broken(_pmVpoc, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_pmVahOn) Level(_pmVah, "pmVAH", _cMonthVp, Broken(_pmVah, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_pmValOn) Level(_pmVal, "pmVAL", _cMonthVp, Broken(_pmVal, dLo, dHi, haveDayRange), _prevMonthStartBar);
+        }
+        if (_dmHaveVp)
+        {
+            if (_dmVpocOn) Level(_dmVpoc, "mVPOC", _cMonthVp, false, _curMonthStartBar);
+            if (_dmVahOn) Level(_dmVah, "mVAH", _cMonthVp, false, _curMonthStartBar);
+            if (_dmValOn) Level(_dmVal, "mVAL", _cMonthVp, false, _curMonthStartBar);
+        }
+        // Wochen-VWAP.
+        if (_pwHaveW && _pwVwapOn)
+        {
+            Level(_pwVwap, "pwVWAP", _cWeekVwap, Broken(_pwVwap, dLo, dHi, haveDayRange), _prevWeekStartBar);
+            if (_wVwapBands) { Level(_pwWvah, "pwWVAH", _cWeekVwap, Broken(_pwWvah, dLo, dHi, haveDayRange), _prevWeekStartBar); Level(_pwWval, "pwWVAL", _cWeekVwap, Broken(_pwWval, dLo, dHi, haveDayRange), _prevWeekStartBar); }
+        }
+        if (_dwHaveW && _dwVwapOn)
+        {
+            Level(_dwVwap, "wVWAP", _cWeekVwap, false, _curWeekStartBar);
+            if (_wVwapBands) { Level(_dwWvah, "wWVAH", _cWeekVwap, false, _curWeekStartBar); Level(_dwWval, "wWVAL", _cWeekVwap, false, _curWeekStartBar); }
+        }
+        // Monats-VWAP.
+        if (_pmHaveW && _pmVwapOn)
+        {
+            Level(_pmVwap, "pmVWAP", _cMonthVwap, Broken(_pmVwap, dLo, dHi, haveDayRange), _prevMonthStartBar);
+            if (_mVwapBands) { Level(_pmWvah, "pmWVAH", _cMonthVwap, Broken(_pmWvah, dLo, dHi, haveDayRange), _prevMonthStartBar); Level(_pmWval, "pmWVAL", _cMonthVwap, Broken(_pmWval, dLo, dHi, haveDayRange), _prevMonthStartBar); }
+        }
+        if (_dmHaveW && _dmVwapOn)
+        {
+            Level(_dmVwap, "mVWAP", _cMonthVwap, false, _curMonthStartBar);
+            if (_mVwapBands) { Level(_dmWvah, "mWVAH", _cMonthVwap, false, _curMonthStartBar); Level(_dmWval, "mWVAL", _cMonthVwap, false, _curMonthStartBar); }
+        }
     }
 
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
@@ -1230,4 +1328,53 @@ public class KeyLevels : Indicator
     [Display(Name = "Sync-Key", GroupName = "Master-Slave", Order = 2,
         Description = "Verbindet einen Master mit seinen Slaves. Master und Slave(s) desselben Instruments mit GLEICHEM Key teilen die Level. Verschiedene Keys = getrennte Gruppen. Master-Chart muss geoeffnet bleiben.")]
     public string SyncKeyStr { get => _syncKey; set { _syncKey = value; RedrawChart(); } }
+
+    // ── HTF-Profil (Woche/Monat VP + VWAP) ──
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vorwoche VPOC", GroupName = "Wochen-VP", Order = 1)] public bool PwVpocOn { get => _pwVpocOn; set { _pwVpocOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vorwoche VAH", GroupName = "Wochen-VP", Order = 2)] public bool PwVahOn { get => _pwVahOn; set { _pwVahOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vorwoche VAL", GroupName = "Wochen-VP", Order = 3)] public bool PwValOn { get => _pwValOn; set { _pwValOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Woche VPOC", GroupName = "Wochen-VP", Order = 4)] public bool DwVpocOn { get => _dwVpocOn; set { _dwVpocOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Woche VAH", GroupName = "Wochen-VP", Order = 5)] public bool DwVahOn { get => _dwVahOn; set { _dwVahOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Woche VAL", GroupName = "Wochen-VP", Order = 6)] public bool DwValOn { get => _dwValOn; set { _dwValOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Farbe", GroupName = "Wochen-VP", Order = 7)] public Color CWeekVp { get => _cWeekVp; set { _cWeekVp = value; RedrawChart(); } }
+
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vormonat VPOC", GroupName = "Monats-VP", Order = 10)] public bool PmVpocOn { get => _pmVpocOn; set { _pmVpocOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vormonat VAH", GroupName = "Monats-VP", Order = 11)] public bool PmVahOn { get => _pmVahOn; set { _pmVahOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vormonat VAL", GroupName = "Monats-VP", Order = 12)] public bool PmValOn { get => _pmValOn; set { _pmValOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Monat VPOC", GroupName = "Monats-VP", Order = 13)] public bool DmVpocOn { get => _dmVpocOn; set { _dmVpocOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Monat VAH", GroupName = "Monats-VP", Order = 14)] public bool DmVahOn { get => _dmVahOn; set { _dmVahOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Monat VAL", GroupName = "Monats-VP", Order = 15)] public bool DmValOn { get => _dmValOn; set { _dmValOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Farbe", GroupName = "Monats-VP", Order = 16)] public Color CMonthVp { get => _cMonthVp; set { _cMonthVp = value; RedrawChart(); } }
+
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vorwoche VWAP", GroupName = "Wochen-VWAP", Order = 20)] public bool PwVwapOn { get => _pwVwapOn; set { _pwVwapOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Woche VWAP", GroupName = "Wochen-VWAP", Order = 21)] public bool DwVwapOn { get => _dwVwapOn; set { _dwVwapOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Wochen-VWAP", Order = 22)] public bool WVwapBands { get => _wVwapBands; set { _wVwapBands = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Farbe", GroupName = "Wochen-VWAP", Order = 23)] public Color CWeekVwap { get => _cWeekVwap; set { _cWeekVwap = value; RedrawChart(); } }
+
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Vormonat VWAP", GroupName = "Monats-VWAP", Order = 30)] public bool PmVwapOn { get => _pmVwapOn; set { _pmVwapOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Akt. Monat VWAP", GroupName = "Monats-VWAP", Order = 31)] public bool DmVwapOn { get => _dmVwapOn; set { _dmVwapOn = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Monats-VWAP", Order = 32)] public bool MVwapBands { get => _mVwapBands; set { _mVwapBands = value; RedrawChart(); } }
+    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Display(Name = "Farbe", GroupName = "Monats-VWAP", Order = 33)] public Color CMonthVwap { get => _cMonthVwap; set { _cMonthVwap = value; RedrawChart(); } }
 }
