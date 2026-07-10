@@ -119,6 +119,8 @@ public class KeyLevels : Indicator
     private bool _showCmH = true, _showCmL = true;
     private Color _cWeek = Color.FromArgb(255, 230, 150, 60);
     private Color _cMonth = Color.FromArgb(255, 150, 120, 220);
+    private Color _cCurWeek = Color.FromArgb(255, 230, 150, 60);
+    private Color _cCurMonth = Color.FromArgb(255, 150, 120, 220);
 
     // IB-Multiples
     private bool _ibM50 = true, _ibM100 = true, _ibM150 = false, _ibM200 = false;
@@ -474,8 +476,8 @@ public class KeyLevels : Indicator
         // Aktuelle Woche High/Low.
         if (_haveWeek)
         {
-            if (_showCwH) Level(context, region, cont, _dwHigh, "wH", _cWeek, false);
-            if (_showCwL) Level(context, region, cont, _dwLow, "wL", _cWeek, false);
+            if (_showCwH) Level(context, region, cont, _dwHigh, "wH", _cCurWeek, false);
+            if (_showCwL) Level(context, region, cont, _dwLow, "wL", _cCurWeek, false);
         }
 
         // Vormonat OHLC.
@@ -489,8 +491,8 @@ public class KeyLevels : Indicator
         // Aktueller Monat High/Low.
         if (_haveMonth)
         {
-            if (_showCmH) Level(context, region, cont, _dmHigh, "mH", _cMonth, false);
-            if (_showCmL) Level(context, region, cont, _dmLow, "mL", _cMonth, false);
+            if (_showCmH) Level(context, region, cont, _dmHigh, "mH", _cCurMonth, false);
+            if (_showCmL) Level(context, region, cont, _dmLow, "mL", _cCurMonth, false);
         }
 
         // IB-Multiples (Projektionen aus der IB-Range).
@@ -855,6 +857,12 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat Low", GroupName = "Aktuelle Woche/Monat", Order = 43)]
     public bool ShowCmL { get => _showCmL; set { _showCmL = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Farbe akt. Woche", GroupName = "Aktuelle Woche/Monat", Order = 44)]
+    public Color CCurWeek { get => _cCurWeek; set { _cCurWeek = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Farbe akt. Monat", GroupName = "Aktuelle Woche/Monat", Order = 45)]
+    public Color CCurMonth { get => _cCurMonth; set { _cCurMonth = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe Monat", GroupName = "Monat", Order = 16)]
     public Color CMonth { get => _cMonth; set { _cMonth = value; RedrawChart(); } }
