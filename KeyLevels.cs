@@ -63,6 +63,14 @@ public class KeyLevels : Indicator
     private decimal _pWvwap, _pWvah, _pWval; private bool _pHaveW;
     private decimal _dWvwap, _dWvah, _dWval; private bool _dHaveW;
 
+    // TPO-Profil: pro Preis die Anzahl verschiedener 30-Min-Brackets, die ihn beruehrt haben.
+    private readonly Dictionary<decimal, int> _tpoCount = new();
+    private readonly Dictionary<decimal, int> _tpoLastBr = new();
+    private decimal _pTpoc, _pTvah, _pTval; private bool _pHaveTpo;
+    private decimal _dTpoc, _dTvah, _dTval; private bool _dHaveTpo;
+    private decimal _pBt, _pSt; private bool _pHaveBt, _pHaveSt;   // Buy/Sell Tail (Vortag)
+    private decimal _dBt, _dSt; private bool _dHaveBt, _dHaveSt;   // aktueller Tag
+
     private RenderFont _font;
     // Sammel-Liste je Frame: Linien zuerst, dann Labels mit Kollisionsvermeidung.
     private readonly List<(int Y, int X1, string Label, Color Col, bool Broken)> _draws = new();
@@ -136,6 +144,18 @@ public class KeyLevels : Indicator
     private bool _ibM50 = true, _ibM100 = true, _ibM150 = false, _ibM200 = false;
     private Color _cIbMult = Color.FromArgb(255, 120, 170, 200);
 
+    // TPO
+    private int _tpoPeriodMin = 30;
+    private int _tpoMinTail = 2;
+    private bool _pTpVah = true, _pTpVal = true, _pTpPoc = true, _pTpBt = true, _pTpSt = true;
+    private bool _cTpVah = true, _cTpVal = true, _cTpPoc = true, _cTpBt = true, _cTpSt = true;
+    private Color _cPTpo = Color.FromArgb(255, 210, 140, 90);
+    private Color _cPTail = Color.FromArgb(255, 240, 90, 200);
+    private Color _cCTpo = Color.FromArgb(255, 235, 165, 110);
+    private Color _cCTail = Color.FromArgb(255, 255, 120, 220);
+    private string _lPTvah = "pTVAH", _lPTval = "pTVAL", _lPTpoc = "pTPOC", _lPBt = "pBT", _lPSt = "pST";
+    private string _lCTvah = "TVAH", _lCTval = "TVAL", _lCTpoc = "TPOC", _lCBt = "BT", _lCSt = "ST";
+
     // Darstellung
     private int _fontSize = 9;
     private int _lineWidth = 1;
@@ -203,6 +223,8 @@ public class KeyLevels : Indicator
         _prevDayStartBar = _ibStartBar = _prevWeekStartBar = _prevMonthStartBar = -1;
         _curDayStartBar = _curWeekStartBar = _curMonthStartBar = 0;
         for (int i = 0; i < 3; i++) _sStartBar[i] = -1;
+        _tpoCount.Clear(); _tpoLastBr.Clear();
+        _pHaveTpo = _dHaveTpo = _pHaveBt = _pHaveSt = _dHaveBt = _dHaveSt = false;
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -227,6 +249,9 @@ public class KeyLevels : Indicator
                 // Vortag-VWAP + Baender.
                 _pHaveW = ComputeVWAP(_curVol, out _pWvwap, out var pSig);
                 if (_pHaveW) { _pWvah = _pWvwap + _wStdFactor * pSig; _pWval = _pWvwap - _wStdFactor * pSig; }
+                // Vortag-TPO + Tails.
+                _pHaveTpo = ComputeTpo(out _pTpoc, out _pTvah, out _pTval);
+                ComputeTails(out _pBt, out _pHaveBt, out _pSt, out _pHaveSt);
             }
             _curDate = d;
             _curOpen = c.Open; _curHigh = c.High; _curLow = c.Low; _curClose = c.Close;
@@ -235,6 +260,7 @@ public class KeyLevels : Indicator
             for (int i = 0; i < 3; i++) _sHas[i] = false;
             _ibHas = false;
             _curVol.Clear();
+            _tpoCount.Clear(); _tpoLastBr.Clear();
         }
         else
         {
@@ -260,9 +286,19 @@ public class KeyLevels : Indicator
             else { if (c.High > _ibH) _ibH = c.High; if (c.Low < _ibL) _ibL = c.Low; }
         }
 
-        // Volumen je Preislevel in das Tages-Histogramm (fuer die Value Area).
+        // Volumen je Preislevel (Value Area) + TPO-Bracket-Zaehlung (Market Profile).
+        int br = _tpoPeriodMin > 0 ? (int)(eff.TimeOfDay.TotalMinutes / _tpoPeriodMin) : 0;
         foreach (var pv in c.GetAllPriceLevels())
-            _curVol[pv.Price] = (_curVol.TryGetValue(pv.Price, out var v) ? v : 0m) + pv.Volume;
+        {
+            decimal p = pv.Price;
+            _curVol[p] = (_curVol.TryGetValue(p, out var v) ? v : 0m) + pv.Volume;
+            // Preis pro Bracket nur einmal zaehlen (TPO-Count = Anzahl verschiedener Brackets).
+            if (!_tpoLastBr.TryGetValue(p, out var lb) || lb != br)
+            {
+                _tpoCount[p] = (_tpoCount.TryGetValue(p, out var cnt) ? cnt : 0) + 1;
+                _tpoLastBr[p] = br;
+            }
+        }
 
         // Woche (Montag als Schluessel).
         DateTime wk = MondayOf(eff.Date);
@@ -301,6 +337,10 @@ public class KeyLevels : Indicator
         if (_dHaveW) { _dWvah = _dWvwap + _wStdFactor * dSig; _dWval = _dWvwap - _wStdFactor * dSig; }
 
         _dwHigh = _wHigh; _dwLow = _wLow; _dmHigh = _mHigh; _dmLow = _mLow;
+
+        // Aktueller-Tag-TPO + Tails (aus committed Bracket-Zaehlung).
+        _dHaveTpo = ComputeTpo(out _dTpoc, out _dTvah, out _dTval);
+        ComputeTails(out _dBt, out _dHaveBt, out _dSt, out _dHaveSt);
 
         var lc = GetCandle(CurrentBar - 1);
         if (lc == null || !_haveCur)
@@ -405,6 +445,36 @@ public class KeyLevels : Indicator
         if (variance < 0m) variance = 0m;
         sigma = (decimal)Math.Sqrt((double)variance);
         return true;
+    }
+
+    // TPO Value Area aus der Bracket-Zaehlung (POC = meiste Brackets, VA-Expansion).
+    private bool ComputeTpo(out decimal poc, out decimal vah, out decimal val)
+    {
+        poc = vah = val = 0m;
+        if (_tpoCount.Count == 0)
+            return false;
+        var tmp = new Dictionary<decimal, decimal>();
+        foreach (var kv in _tpoCount) tmp[kv.Key] = kv.Value;
+        return ComputeVA(tmp, out poc, out vah, out val);
+    }
+
+    // Buying/Selling Tails: Reihe von Single Prints (TPO-Count == 1) am unteren bzw.
+    // oberen Profil-Rand. Level = Basis der Reihe (innere Kante = S/R).
+    private void ComputeTails(out decimal bt, out bool hasBt, out decimal st, out bool hasSt)
+    {
+        bt = st = 0m; hasBt = hasSt = false;
+        if (_tpoCount.Count == 0)
+            return;
+        var prices = _tpoCount.Keys.ToList();
+        prices.Sort();
+        // Buy Tail unten: von index 0 hoch, solange Single Print.
+        int i = 0;
+        while (i < prices.Count && _tpoCount[prices[i]] == 1) i++;
+        if (i >= _tpoMinTail) { bt = prices[i - 1]; hasBt = true; }
+        // Sell Tail oben: von oben runter.
+        int j = prices.Count - 1;
+        while (j >= 0 && _tpoCount[prices[j]] == 1) j--;
+        if ((prices.Count - 1) - j >= _tpoMinTail) { st = prices[j + 1]; hasSt = true; }
     }
 
     // Session-Index fuer eine Uhrzeit (angenommen Start < Ende, kein Mitternachts-Wrap).
@@ -534,6 +604,26 @@ public class KeyLevels : Indicator
                 if (_ibM200) { Level(context, region, cont, _dIbH + 2.0m * r, "IB+200", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 2.0m * r, "IB-200", _cIbMult, false, _ibStartBar); }
             }
         }
+
+        // TPO Vortag (gebrochen moeglich).
+        if (_pHaveTpo)
+        {
+            if (_pTpPoc) Level(context, region, cont, _pTpoc, _lPTpoc, _cPTpo, Broken(_pTpoc, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pTpVah) Level(context, region, cont, _pTvah, _lPTvah, _cPTpo, Broken(_pTvah, dLo, dHi, haveDayRange), _prevDayStartBar);
+            if (_pTpVal) Level(context, region, cont, _pTval, _lPTval, _cPTpo, Broken(_pTval, dLo, dHi, haveDayRange), _prevDayStartBar);
+        }
+        if (_pTpBt && _pHaveBt) Level(context, region, cont, _pBt, _lPBt, _cPTail, Broken(_pBt, dLo, dHi, haveDayRange), _prevDayStartBar);
+        if (_pTpSt && _pHaveSt) Level(context, region, cont, _pSt, _lPSt, _cPTail, Broken(_pSt, dLo, dHi, haveDayRange), _prevDayStartBar);
+
+        // TPO aktueller Tag.
+        if (_dHaveTpo)
+        {
+            if (_cTpPoc) Level(context, region, cont, _dTpoc, _lCTpoc, _cCTpo, false, _curDayStartBar);
+            if (_cTpVah) Level(context, region, cont, _dTvah, _lCTvah, _cCTpo, false, _curDayStartBar);
+            if (_cTpVal) Level(context, region, cont, _dTval, _lCTval, _cCTpo, false, _curDayStartBar);
+        }
+        if (_cTpBt && _dHaveBt) Level(context, region, cont, _dBt, _lCBt, _cCTail, false, _curDayStartBar);
+        if (_cTpSt && _dHaveSt) Level(context, region, cont, _dSt, _lCSt, _cCTail, false, _curDayStartBar);
 
         // Linien + kollisionsfreie Labels zeichnen.
         FlushLevels(context, region);
@@ -1020,4 +1110,64 @@ public class KeyLevels : Indicator
     [Display(Name = "Akt. Monat High", GroupName = "Aktuelle Woche/Monat", Order = 31)] public string LblCmH { get => _lCmH; set { _lCmH = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat Low", GroupName = "Aktuelle Woche/Monat", Order = 41)] public string LblCmL { get => _lCmL; set { _lCmL = value; RedrawChart(); } }
+
+    // ── TPO ──
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "TPO-Periode (Minuten)", GroupName = "Allgemein", Order = 1, Description = "Laenge einer TPO-Periode (Bracket). Standard 30. Wird per Zeitstempel gebucket -> Chart-Bargroesse egal.")]
+    [Range(1, 240)]
+    public int TpoPeriodMin { get => _tpoPeriodMin; set { _tpoPeriodMin = Math.Clamp(value, 1, 240); RecalculateValues(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Min-Tail (Single Prints)", GroupName = "Allgemein", Order = 2, Description = "Ab so vielen aufeinanderfolgenden Single Prints am Rand zaehlt es als Buying/Selling Tail. Standard 2.")]
+    [Range(1, 20)]
+    public int TpoMinTail { get => _tpoMinTail; set { _tpoMinTail = Math.Clamp(value, 1, 20); RedrawChart(); } }
+
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TPOC", GroupName = "Vortag", Order = 10)] public bool PTpPoc { get => _pTpPoc; set { _pTpPoc = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TPOC Name", GroupName = "Vortag", Order = 11)] public string LblPTpoc { get => _lPTpoc; set { _lPTpoc = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TVAH", GroupName = "Vortag", Order = 20)] public bool PTpVah { get => _pTpVah; set { _pTpVah = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TVAH Name", GroupName = "Vortag", Order = 21)] public string LblPTvah { get => _lPTvah; set { _lPTvah = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TVAL", GroupName = "Vortag", Order = 30)] public bool PTpVal { get => _pTpVal; set { _pTpVal = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag TVAL Name", GroupName = "Vortag", Order = 31)] public string LblPTval { get => _lPTval; set { _lPTval = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag Buy Tail", GroupName = "Vortag", Order = 40)] public bool PTpBt { get => _pTpBt; set { _pTpBt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag Buy Tail Name", GroupName = "Vortag", Order = 41)] public string LblPBt { get => _lPBt; set { _lPBt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag Sell Tail", GroupName = "Vortag", Order = 50)] public bool PTpSt { get => _pTpSt; set { _pTpSt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Vortag Sell Tail Name", GroupName = "Vortag", Order = 51)] public string LblPSt { get => _lPSt; set { _lPSt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Farbe TPO", GroupName = "Vortag", Order = 60)] public Color CPTpo { get => _cPTpo; set { _cPTpo = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Farbe Tails", GroupName = "Vortag", Order = 61)] public Color CPTail { get => _cPTail; set { _cPTail = value; RedrawChart(); } }
+
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TPOC", GroupName = "Aktueller Tag", Order = 10)] public bool CTpPoc { get => _cTpPoc; set { _cTpPoc = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TPOC Name", GroupName = "Aktueller Tag", Order = 11)] public string LblCTpoc { get => _lCTpoc; set { _lCTpoc = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TVAH", GroupName = "Aktueller Tag", Order = 20)] public bool CTpVah { get => _cTpVah; set { _cTpVah = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TVAH Name", GroupName = "Aktueller Tag", Order = 21)] public string LblCTvah { get => _lCTvah; set { _lCTvah = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TVAL", GroupName = "Aktueller Tag", Order = 30)] public bool CTpVal { get => _cTpVal; set { _cTpVal = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag TVAL Name", GroupName = "Aktueller Tag", Order = 31)] public string LblCTval { get => _lCTval; set { _lCTval = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag Buy Tail", GroupName = "Aktueller Tag", Order = 40)] public bool CTpBt { get => _cTpBt; set { _cTpBt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag Buy Tail Name", GroupName = "Aktueller Tag", Order = 41)] public string LblCBt { get => _lCBt; set { _lCBt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag Sell Tail", GroupName = "Aktueller Tag", Order = 50)] public bool CTpSt { get => _cTpSt; set { _cTpSt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Tag Sell Tail Name", GroupName = "Aktueller Tag", Order = 51)] public string LblCSt { get => _lCSt; set { _lCSt = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Farbe TPO", GroupName = "Aktueller Tag", Order = 60)] public Color CCTpo { get => _cCTpo; set { _cCTpo = value; RedrawChart(); } }
+    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Display(Name = "Farbe Tails", GroupName = "Aktueller Tag", Order = 61)] public Color CCTail { get => _cCTail; set { _cCTail = value; RedrawChart(); } }
 }
