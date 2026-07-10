@@ -1330,51 +1330,51 @@ public class KeyLevels : Indicator
     public string SyncKeyStr { get => _syncKey; set { _syncKey = value; RedrawChart(); } }
 
     // ── HTF-Profil (Woche/Monat VP + VWAP) ──
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vorwoche VPOC", GroupName = "Wochen-VP", Order = 1)] public bool PwVpocOn { get => _pwVpocOn; set { _pwVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vorwoche VAH", GroupName = "Wochen-VP", Order = 2)] public bool PwVahOn { get => _pwVahOn; set { _pwVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vorwoche VAL", GroupName = "Wochen-VP", Order = 3)] public bool PwValOn { get => _pwValOn; set { _pwValOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Woche VPOC", GroupName = "Wochen-VP", Order = 4)] public bool DwVpocOn { get => _dwVpocOn; set { _dwVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Woche VAH", GroupName = "Wochen-VP", Order = 5)] public bool DwVahOn { get => _dwVahOn; set { _dwVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Woche VAL", GroupName = "Wochen-VP", Order = 6)] public bool DwValOn { get => _dwValOn; set { _dwValOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe", GroupName = "Wochen-VP", Order = 7)] public Color CWeekVp { get => _cWeekVp; set { _cWeekVp = value; RedrawChart(); } }
 
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vormonat VPOC", GroupName = "Monats-VP", Order = 10)] public bool PmVpocOn { get => _pmVpocOn; set { _pmVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vormonat VAH", GroupName = "Monats-VP", Order = 11)] public bool PmVahOn { get => _pmVahOn; set { _pmVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vormonat VAL", GroupName = "Monats-VP", Order = 12)] public bool PmValOn { get => _pmValOn; set { _pmValOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat VPOC", GroupName = "Monats-VP", Order = 13)] public bool DmVpocOn { get => _dmVpocOn; set { _dmVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat VAH", GroupName = "Monats-VP", Order = 14)] public bool DmVahOn { get => _dmVahOn; set { _dmVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat VAL", GroupName = "Monats-VP", Order = 15)] public bool DmValOn { get => _dmValOn; set { _dmValOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe", GroupName = "Monats-VP", Order = 16)] public Color CMonthVp { get => _cMonthVp; set { _cMonthVp = value; RedrawChart(); } }
 
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vorwoche VWAP", GroupName = "Wochen-VWAP", Order = 20)] public bool PwVwapOn { get => _pwVwapOn; set { _pwVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Woche VWAP", GroupName = "Wochen-VWAP", Order = 21)] public bool DwVwapOn { get => _dwVwapOn; set { _dwVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Wochen-VWAP", Order = 22)] public bool WVwapBands { get => _wVwapBands; set { _wVwapBands = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe", GroupName = "Wochen-VWAP", Order = 23)] public Color CWeekVwap { get => _cWeekVwap; set { _cWeekVwap = value; RedrawChart(); } }
 
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Vormonat VWAP", GroupName = "Monats-VWAP", Order = 30)] public bool PmVwapOn { get => _pmVwapOn; set { _pmVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Akt. Monat VWAP", GroupName = "Monats-VWAP", Order = 31)] public bool DmVwapOn { get => _dmVwapOn; set { _dmVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Monats-VWAP", Order = 32)] public bool MVwapBands { get => _mVwapBands; set { _mVwapBands = value; RedrawChart(); } }
-    [Tab(TabName = "HTF-Profil", TabOrder = 12)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
     [Display(Name = "Farbe", GroupName = "Monats-VWAP", Order = 33)] public Color CMonthVwap { get => _cMonthVwap; set { _cMonthVwap = value; RedrawChart(); } }
 }
