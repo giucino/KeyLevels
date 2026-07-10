@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
@@ -63,6 +64,8 @@ public class KeyLevels : Indicator
     private decimal _dWvwap, _dWvah, _dWval; private bool _dHaveW;
 
     private RenderFont _font;
+    // Sammel-Liste je Frame: Linien zuerst, dann Labels mit Kollisionsvermeidung.
+    private readonly List<(int Y, int X1, string Label, Color Col, bool Broken)> _draws = new();
 
     // ─────────────────────────────────────────────────────────────────
     //  SETTINGS-FELDER
@@ -519,6 +522,9 @@ public class KeyLevels : Indicator
                 if (_ibM200) { Level(context, region, cont, _dIbH + 2.0m * r, "IB+200", _cIbMult, false, _ibStartBar); Level(context, region, cont, _dIbL - 2.0m * r, "IB-200", _cIbMult, false, _ibStartBar); }
             }
         }
+
+        // Linien + kollisionsfreie Labels zeichnen.
+        FlushLevels(context, region);
     }
 
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
@@ -542,15 +548,41 @@ public class KeyLevels : Indicator
         if (x1 > region.Right)
             x1 = region.Left;   // Origin liegt rechts vom sichtbaren Bereich
 
-        var pen = broken && _brokenDotted
-            ? new RenderPen(col, _lineWidth, System.Drawing.Drawing2D.DashStyle.Dot)
-            : new RenderPen(col, _lineWidth);
-        ctx.DrawLine(pen, x1, y, region.Right, y);
+        _draws.Add((y, x1, label, col, broken));
+    }
 
-        string txt = label;
-        var sz = ctx.MeasureString(txt, _font);
-        int tx = _labelLeft ? x1 + 3 : region.Right - sz.Width - 3;
-        ctx.DrawString(txt, _font, col, tx, y - sz.Height - 1);
+    // Erst alle Linien, dann Labels mit Kollisionsvermeidung: Labels auf gleicher Hoehe
+    // werden nebeneinander versetzt, statt uebereinander (Lesbarkeit).
+    private void FlushLevels(RenderContext ctx, Rectangle region)
+    {
+        foreach (var d in _draws)
+        {
+            var pen = d.Broken && _brokenDotted
+                ? new RenderPen(d.Col, _lineWidth, System.Drawing.Drawing2D.DashStyle.Dot)
+                : new RenderPen(d.Col, _lineWidth);
+            ctx.DrawLine(pen, d.X1, d.Y, region.Right, d.Y);
+        }
+
+        var occupied = new List<Rectangle>();
+        const int gap = 4;
+        foreach (var d in _draws.OrderBy(x => x.Y).ThenBy(x => x.X1))
+        {
+            var sz = ctx.MeasureString(d.Label, _font);
+            int w = sz.Width, h = sz.Height;
+            int ty = d.Y - h - 1;
+            int tx = _labelLeft ? d.X1 + 3 : region.Right - w - 3;
+            var rect = new Rectangle(tx, ty, w, h);
+            int guard = 0;
+            while (guard++ < 60 && occupied.Any(o => o.IntersectsWith(rect)))
+            {
+                if (_labelLeft) tx = occupied.Where(o => o.IntersectsWith(rect)).Max(o => o.Right) + gap;
+                else tx = occupied.Where(o => o.IntersectsWith(rect)).Min(o => o.Left) - w - gap;
+                rect = new Rectangle(tx, ty, w, h);
+            }
+            ctx.DrawString(d.Label, _font, d.Col, tx, ty);
+            occupied.Add(rect);
+        }
+        _draws.Clear();
     }
 
     // Session-Hintergrund als vertikale Baender (zusammenhaengende Bars gleicher Session).
