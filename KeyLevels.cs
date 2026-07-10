@@ -33,6 +33,13 @@ public class KeyLevels : Indicator
     private decimal _ibH, _ibL;
     private bool _ibHas;
 
+    // Woche / Monat
+    private DateTime _curWeekKey = DateTime.MinValue, _curMonthKey = DateTime.MinValue;
+    private bool _haveWeek, _havePrevWeek, _haveMonth, _havePrevMonth;
+    private decimal _wOpen, _wHigh, _wLow, _wClose, _pwO, _pwH, _pwL, _pwC;
+    private decimal _mOpen, _mHigh, _mLow, _mClose, _pmO, _pmH, _pmL, _pmC;
+    private decimal _dwHigh, _dwLow, _dmHigh, _dmLow;   // aktuelle Woche/Monat (Anzeige)
+
     // Anzeige-Werte (Committed + Live-Bar gefaltet)
     private decimal _dCurHigh, _dCurLow, _dCurClose;
     private readonly decimal[] _dSHigh = new decimal[3];
@@ -105,6 +112,18 @@ public class KeyLevels : Indicator
     private Color _cCdWEdge = Color.FromArgb(255, 130, 160, 255);
     private Color _cCdWpoc = Color.FromArgb(255, 245, 245, 245);
 
+    // Woche / Monat
+    private bool _showPwH = true, _showPwL = true, _showPwO = true, _showPwC = true;
+    private bool _showCwH = true, _showCwL = true;
+    private bool _showPmH = true, _showPmL = true, _showPmO = true, _showPmC = true;
+    private bool _showCmH = true, _showCmL = true;
+    private Color _cWeek = Color.FromArgb(255, 230, 150, 60);
+    private Color _cMonth = Color.FromArgb(255, 150, 120, 220);
+
+    // IB-Multiples
+    private bool _ibM50 = true, _ibM100 = true, _ibM150 = false, _ibM200 = false;
+    private Color _cIbMult = Color.FromArgb(255, 120, 170, 200);
+
     // Darstellung
     private int _fontSize = 9;
     private int _lineWidth = 1;
@@ -155,6 +174,8 @@ public class KeyLevels : Indicator
         _curVol.Clear();
         _pHaveVp = _dHaveVp = false;
         _pHaveW = _dHaveW = false;
+        _curWeekKey = _curMonthKey = DateTime.MinValue;
+        _haveWeek = _havePrevWeek = _haveMonth = _havePrevMonth = false;
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -213,7 +234,29 @@ public class KeyLevels : Indicator
         // Volumen je Preislevel in das Tages-Histogramm (fuer die Value Area).
         foreach (var pv in c.GetAllPriceLevels())
             _curVol[pv.Price] = (_curVol.TryGetValue(pv.Price, out var v) ? v : 0m) + pv.Volume;
+
+        // Woche (Montag als Schluessel).
+        DateTime wk = MondayOf(eff.Date);
+        if (wk != _curWeekKey)
+        {
+            if (_haveWeek) { _pwO = _wOpen; _pwH = _wHigh; _pwL = _wLow; _pwC = _wClose; _havePrevWeek = true; }
+            _curWeekKey = wk; _wOpen = c.Open; _wHigh = c.High; _wLow = c.Low; _haveWeek = true;
+        }
+        else { if (c.High > _wHigh) _wHigh = c.High; if (c.Low < _wLow) _wLow = c.Low; }
+        _wClose = c.Close;
+
+        // Monat.
+        DateTime mo = new DateTime(eff.Year, eff.Month, 1);
+        if (mo != _curMonthKey)
+        {
+            if (_haveMonth) { _pmO = _mOpen; _pmH = _mHigh; _pmL = _mLow; _pmC = _mClose; _havePrevMonth = true; }
+            _curMonthKey = mo; _mOpen = c.Open; _mHigh = c.High; _mLow = c.Low; _haveMonth = true;
+        }
+        else { if (c.High > _mHigh) _mHigh = c.High; if (c.Low < _mLow) _mLow = c.Low; }
+        _mClose = c.Close;
     }
+
+    private static DateTime MondayOf(DateTime d) => d.AddDays(-(((int)d.DayOfWeek + 6) % 7));
 
     // Anzeige-Werte = Committed-State + Live-Bar (CurrentBar-1) eingefaltet.
     private void ComputeDisplay()
@@ -227,6 +270,8 @@ public class KeyLevels : Indicator
         // Aktueller-Tag-VWAP + Baender.
         _dHaveW = ComputeVWAP(_curVol, out _dWvwap, out var dSig);
         if (_dHaveW) { _dWvah = _dWvwap + _wStdFactor * dSig; _dWval = _dWvwap - _wStdFactor * dSig; }
+
+        _dwHigh = _wHigh; _dwLow = _wLow; _dmHigh = _mHigh; _dmLow = _mLow;
 
         var lc = GetCandle(CurrentBar - 1);
         if (lc == null || !_haveCur)
@@ -254,6 +299,18 @@ public class KeyLevels : Indicator
                 if (!_ibHas) { _dIbH = lc.High; _dIbL = lc.Low; }
                 else { if (lc.High > _dIbH) _dIbH = lc.High; if (lc.Low < _dIbL) _dIbL = lc.Low; }
             }
+        }
+
+        // Live-Bar in aktuelle Woche/Monat-Extrema (fast immer selbe Woche/Monat).
+        if (_haveWeek)
+        {
+            if (lc.High > _dwHigh) _dwHigh = lc.High;
+            if (lc.Low < _dwLow) _dwLow = lc.Low;
+        }
+        if (_haveMonth)
+        {
+            if (lc.High > _dmHigh) _dmHigh = lc.High;
+            if (lc.Low < _dmLow) _dmLow = lc.Low;
         }
     }
 
@@ -404,6 +461,49 @@ public class KeyLevels : Indicator
             if (_cdWpoc) Level(context, region, cont, _dWvwap, "VWAP", _cCdWpoc, false);
             if (_cdWvah) Level(context, region, cont, _dWvah, "WVAH", _cCdWEdge, false);
             if (_cdWval) Level(context, region, cont, _dWval, "WVAL", _cCdWEdge, false);
+        }
+
+        // Vorwoche OHLC (gebrochen moeglich).
+        if (_havePrevWeek)
+        {
+            if (_showPwH) Level(context, region, cont, _pwH, "pwH", _cWeek, Broken(_pwH, dLo, dHi, haveDayRange));
+            if (_showPwL) Level(context, region, cont, _pwL, "pwL", _cWeek, Broken(_pwL, dLo, dHi, haveDayRange));
+            if (_showPwO) Level(context, region, cont, _pwO, "pwO", _cWeek, Broken(_pwO, dLo, dHi, haveDayRange));
+            if (_showPwC) Level(context, region, cont, _pwC, "pwC", _cWeek, Broken(_pwC, dLo, dHi, haveDayRange));
+        }
+        // Aktuelle Woche High/Low.
+        if (_haveWeek)
+        {
+            if (_showCwH) Level(context, region, cont, _dwHigh, "wH", _cWeek, false);
+            if (_showCwL) Level(context, region, cont, _dwLow, "wL", _cWeek, false);
+        }
+
+        // Vormonat OHLC.
+        if (_havePrevMonth)
+        {
+            if (_showPmH) Level(context, region, cont, _pmH, "pmH", _cMonth, Broken(_pmH, dLo, dHi, haveDayRange));
+            if (_showPmL) Level(context, region, cont, _pmL, "pmL", _cMonth, Broken(_pmL, dLo, dHi, haveDayRange));
+            if (_showPmO) Level(context, region, cont, _pmO, "pmO", _cMonth, Broken(_pmO, dLo, dHi, haveDayRange));
+            if (_showPmC) Level(context, region, cont, _pmC, "pmC", _cMonth, Broken(_pmC, dLo, dHi, haveDayRange));
+        }
+        // Aktueller Monat High/Low.
+        if (_haveMonth)
+        {
+            if (_showCmH) Level(context, region, cont, _dmHigh, "mH", _cMonth, false);
+            if (_showCmL) Level(context, region, cont, _dmLow, "mL", _cMonth, false);
+        }
+
+        // IB-Multiples (Projektionen aus der IB-Range).
+        if (_showIb && _ibHas)
+        {
+            decimal r = _dIbH - _dIbL;
+            if (r > 0)
+            {
+                if (_ibM50) { Level(context, region, cont, _dIbH + 0.5m * r, "IB+50", _cIbMult, false); Level(context, region, cont, _dIbL - 0.5m * r, "IB-50", _cIbMult, false); }
+                if (_ibM100) { Level(context, region, cont, _dIbH + 1.0m * r, "IB+100", _cIbMult, false); Level(context, region, cont, _dIbL - 1.0m * r, "IB-100", _cIbMult, false); }
+                if (_ibM150) { Level(context, region, cont, _dIbH + 1.5m * r, "IB+150", _cIbMult, false); Level(context, region, cont, _dIbL - 1.5m * r, "IB-150", _cIbMult, false); }
+                if (_ibM200) { Level(context, region, cont, _dIbH + 2.0m * r, "IB+200", _cIbMult, false); Level(context, region, cont, _dIbL - 2.0m * r, "IB-200", _cIbMult, false); }
+            }
         }
     }
 
@@ -606,6 +706,22 @@ public class KeyLevels : Indicator
     [Display(Name = "Farbe IB", GroupName = "Farben", Order = 10)]
     public Color CIb { get => _cIb; set { _cIb = value; RedrawChart(); } }
 
+    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Display(Name = "IB 50 %", GroupName = "Multiples", Order = 20, Description = "Projektion IB-High + 50%*Range und IB-Low - 50%*Range.")]
+    public bool IbM50 { get => _ibM50; set { _ibM50 = value; RedrawChart(); } }
+    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Display(Name = "IB 100 %", GroupName = "Multiples", Order = 21)]
+    public bool IbM100 { get => _ibM100; set { _ibM100 = value; RedrawChart(); } }
+    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Display(Name = "IB 150 %", GroupName = "Multiples", Order = 22)]
+    public bool IbM150 { get => _ibM150; set { _ibM150 = value; RedrawChart(); } }
+    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Display(Name = "IB 200 %", GroupName = "Multiples", Order = 23)]
+    public bool IbM200 { get => _ibM200; set { _ibM200 = value; RedrawChart(); } }
+    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Display(Name = "Farbe Multiples", GroupName = "Multiples", Order = 24)]
+    public Color CIbMult { get => _cIbMult; set { _cIbMult = value; RedrawChart(); } }
+
     // ── Darstellung ──
     [Tab(TabName = "Darstellung", TabOrder = 5)]
     [Display(Name = "Schriftgroesse", GroupName = "Darstellung", Order = 1)]
@@ -697,4 +813,49 @@ public class KeyLevels : Indicator
     [Tab(TabName = "VWAP", TabOrder = 7)]
     [Display(Name = "Farbe Baender", GroupName = "Aktueller Tag", Order = 24)]
     public Color CCdWEdge { get => _cCdWEdge; set { _cCdWEdge = value; RedrawChart(); } }
+
+    // ── Woche / Monat ──
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vorwoche High", GroupName = "Vorwoche", Order = 1)]
+    public bool ShowPwH { get => _showPwH; set { _showPwH = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vorwoche Low", GroupName = "Vorwoche", Order = 2)]
+    public bool ShowPwL { get => _showPwL; set { _showPwL = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vorwoche Open", GroupName = "Vorwoche", Order = 3)]
+    public bool ShowPwO { get => _showPwO; set { _showPwO = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vorwoche Close", GroupName = "Vorwoche", Order = 4)]
+    public bool ShowPwC { get => _showPwC; set { _showPwC = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Akt. Woche High", GroupName = "Vorwoche", Order = 5)]
+    public bool ShowCwH { get => _showCwH; set { _showCwH = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Akt. Woche Low", GroupName = "Vorwoche", Order = 6)]
+    public bool ShowCwL { get => _showCwL; set { _showCwL = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Farbe Woche", GroupName = "Vorwoche", Order = 7)]
+    public Color CWeek { get => _cWeek; set { _cWeek = value; RedrawChart(); } }
+
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vormonat High", GroupName = "Vormonat", Order = 10)]
+    public bool ShowPmH { get => _showPmH; set { _showPmH = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vormonat Low", GroupName = "Vormonat", Order = 11)]
+    public bool ShowPmL { get => _showPmL; set { _showPmL = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vormonat Open", GroupName = "Vormonat", Order = 12)]
+    public bool ShowPmO { get => _showPmO; set { _showPmO = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Vormonat Close", GroupName = "Vormonat", Order = 13)]
+    public bool ShowPmC { get => _showPmC; set { _showPmC = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Akt. Monat High", GroupName = "Vormonat", Order = 14)]
+    public bool ShowCmH { get => _showCmH; set { _showCmH = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Akt. Monat Low", GroupName = "Vormonat", Order = 15)]
+    public bool ShowCmL { get => _showCmL; set { _showCmL = value; RedrawChart(); } }
+    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Display(Name = "Farbe Monat", GroupName = "Vormonat", Order = 16)]
+    public Color CMonth { get => _cMonth; set { _cMonth = value; RedrawChart(); } }
 }
