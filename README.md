@@ -56,12 +56,13 @@ Wochen-/Monats-/TPO-Level, obwohl er selbst kaum Historie lädt. Master-Chart of
 
 ## Einstellungen (Reiter)
 
-Vortag · Aktueller Tag · Woche/Monat · Sessions · Initial Balance · TPO · Sync · Darstellung.
+Vortag · Aktueller Tag · Woche · Monat · Sessions · Initial Balance · TPO · Sync · Darstellung.
 In den Level-Reitern steht das **Namensfeld direkt unter jeder Checkbox** (Enable → Name → … → Farben).
 
-**Nach Zeitrahmen gebündelt:** Tages-**Volumen-Profil** und Tages-**VWAP** sind Untergruppen
-direkt in den Reitern **Vortag**/**Aktueller Tag** (keine eigenen Metrik-Reiter mehr); die
-Wochen-/Monats-Varianten liegen analog im Reiter **Woche/Monat**.
+**Nach Zeitrahmen gebündelt:** Jeder Zeitrahmen hat einen eigenen Reiter mit derselben
+Gruppen-Struktur — *Vorperiode (OHLC) · aktuelle Periode · Volumen-Profil · VWAP*.
+**Vortag**/**Aktueller Tag** für den Tag, **Woche** und **Monat** je eigen. Keine
+separaten Metrik-Reiter (Volumen-Profil/VWAP) mehr.
 
 Wichtige Regler: **Zeitzonen-Offset**, **Value-Area %** (Default 70), **VWAP Std-Faktor**
 (Default 1σ), **TPO-Periode** (Default 30 Min) + **Min-Tail**, **IB Start/Dauer**,
