@@ -1058,279 +1058,279 @@ public class KeyLevels : Indicator
     public Color CCdEq { get => _cCdEq; set { _cCdEq = value; RedrawChart(); } }
 
     // ── Sessions ──
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Zeitzonen-Offset (Stunden)", GroupName = "Zeiten", Order = 0,
         Description = "Stunden, die auf die Kerzenzeit addiert werden, damit die Session-Zeiten der CHART-Anzeige entsprechen. Default 2 (Kerzenzeit 2h hinter Chart). Bei Bedarf +/- anpassen, bis das Shading zu den echten Sessions passt.")]
     [Range(-12, 12)]
     public int TzOffset { get => _tzOffset; set { _tzOffset = Math.Clamp(value, -12, 12); RecalculateValues(); } }
 
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Asia Start", GroupName = "Zeiten", Order = 1, Description = "Chart-Zeit. Default 00:00.")]
     public TimeSpan AsiaStart { get => _asiaStart; set { _asiaStart = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Asia Ende", GroupName = "Zeiten", Order = 2)]
     public TimeSpan AsiaEnd { get => _asiaEnd; set { _asiaEnd = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "EU Start", GroupName = "Zeiten", Order = 3)]
     public TimeSpan EuStart { get => _euStart; set { _euStart = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "EU Ende", GroupName = "Zeiten", Order = 4)]
     public TimeSpan EuEnd { get => _euEnd; set { _euEnd = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "US Start", GroupName = "Zeiten", Order = 5)]
     public TimeSpan UsStart { get => _usStart; set { _usStart = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "US Ende", GroupName = "Zeiten", Order = 6)]
     public TimeSpan UsEnd { get => _usEnd; set { _usEnd = value; RecalculateValues(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Asia High/Low", GroupName = "Level", Order = 10)]
     public bool ShowAsia { get => _showAsia; set { _showAsia = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "EU High/Low", GroupName = "Level", Order = 20)]
     public bool ShowEu { get => _showEu; set { _showEu = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "US High/Low", GroupName = "Level", Order = 30)]
     public bool ShowUs { get => _showUs; set { _showUs = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Shading Asia", GroupName = "Hintergrund", Order = 20)]
     public bool ShadeAsia { get => _shadeAsia; set { _shadeAsia = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Shading EU", GroupName = "Hintergrund", Order = 21)]
     public bool ShadeEu { get => _shadeEu; set { _shadeEu = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Shading US", GroupName = "Hintergrund", Order = 22)]
     public bool ShadeUs { get => _shadeUs; set { _shadeUs = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Shading-Deckkraft", GroupName = "Hintergrund", Order = 23, Description = "0-120. Niedrig = dezent.")]
     [Range(0, 120)]
     public int ShadeAlpha { get => _shadeAlpha; set { _shadeAlpha = Math.Clamp(value, 0, 120); RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Farbe Asia", GroupName = "Farben", Order = 30)]
     public Color CAsia { get => _cAsia; set { _cAsia = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Farbe EU", GroupName = "Farben", Order = 31)]
     public Color CEu { get => _cEu; set { _cEu = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Farbe US", GroupName = "Farben", Order = 32)]
     public Color CUs { get => _cUs; set { _cUs = value; RedrawChart(); } }
 
     // ── Initial Balance ──
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB High/Low anzeigen", GroupName = "Level", Order = 10)]
     public bool ShowIb { get => _showIb; set { _showIb = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB Start (Uhrzeit)", GroupName = "Level", Order = 20, Description = "Beginn der Initial Balance. Default 15:30 (US/RTH-Open).")]
     public TimeSpan IbStart { get => _ibStart; set { _ibStart = value; RecalculateValues(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB Dauer (Minuten)", GroupName = "Level", Order = 21)]
     [Range(5, 600)]
     public int IbMinutes { get => _ibMinutes; set { _ibMinutes = Math.Clamp(value, 5, 600); RecalculateValues(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "Farbe IB", GroupName = "Farben", Order = 10)]
     public Color CIb { get => _cIb; set { _cIb = value; RedrawChart(); } }
 
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB 50 %", GroupName = "Multiples", Order = 20, Description = "Projektion IB-High + 50%*Range und IB-Low - 50%*Range.")]
     public bool IbM50 { get => _ibM50; set { _ibM50 = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB 100 %", GroupName = "Multiples", Order = 21)]
     public bool IbM100 { get => _ibM100; set { _ibM100 = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB 150 %", GroupName = "Multiples", Order = 22)]
     public bool IbM150 { get => _ibM150; set { _ibM150 = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB 200 %", GroupName = "Multiples", Order = 23)]
     public bool IbM200 { get => _ibM200; set { _ibM200 = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "Farbe Multiples", GroupName = "Multiples", Order = 24)]
     public Color CIbMult { get => _cIbMult; set { _cIbMult = value; RedrawChart(); } }
 
     // ── Darstellung ──
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Schriftgroesse", GroupName = "Darstellung", Order = 1)]
     [Range(6, 24)]
     public int FontSize { get => _fontSize; set { _fontSize = Math.Clamp(value, 6, 24); BuildFont(); RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Linienbreite", GroupName = "Darstellung", Order = 2)]
     [Range(1, 5)]
     public int LineWidth { get => _lineWidth; set { _lineWidth = Math.Clamp(value, 1, 5); RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Label links (aus = rechts)", GroupName = "Darstellung", Order = 3)]
     public bool LabelLeft { get => _labelLeft; set { _labelLeft = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Broken-Modus", GroupName = "Broken (durchgehandelt)", Order = 4,
         Description = "Wie mit Leveln umgehen, durch die der heutige Bereich schon durchgehandelt hat (Preis war ober- UND unterhalb). Gestrichelt = sichtbar, gepunktet (Default). Ausblenden = Linie verschwindet (Opt-in, Vorsicht: auch VPOC etc. weg). Normal = ignorieren, immer durchgezogen.")]
     public KLBroken BrokenModus { get => _brokenMode; set { _brokenMode = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Broken einfaerben", GroupName = "Broken (durchgehandelt)", Order = 5,
         Description = "An = durchgehandelte Level werden in der Broken-Farbe (statt ihrer eigenen) gezeichnet, bleiben aber sichtbar. Zum dezenten Abheben ohne sie zu verlieren.")]
     public bool BrokenUseColor { get => _brokenUseColor; set { _brokenUseColor = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Broken-Farbe", GroupName = "Broken (durchgehandelt)", Order = 6)]
     public Color BrokenColor { get => _brokenColor; set { _brokenColor = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Break erst bei Kerzen-Schluss", GroupName = "Broken (durchgehandelt)", Order = 7,
         Description = "An = 'broken' erst, wenn eine Kerze jenseits des Levels SCHLIESST (Close-Extrema), nicht schon beim Durchwicken. Strenger. Aus = Wick-basiert (Preis war ober- und unterhalb).")]
     public bool BreakOnClose { get => _breakOnClose; set { _breakOnClose = value; RedrawChart(); } }
 
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Naked-Level hervorheben", GroupName = "Untested / Naked", Order = 30,
         Description = "An = Level, die heute (per Docht) noch NICHT angelaufen wurden, werden dicker/heller gezeichnet. Unberuehrte Level reagieren oft am staerksten.")]
     public bool HighlightNaked { get => _highlightNaked; set { _highlightNaked = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Naked: Extra-Breite (px)", GroupName = "Untested / Naked", Order = 31,
         Description = "Zusaetzliche Linienbreite fuer Naked-Level. 0 = nur ueber Farbe hervorheben.")]
     [Range(0, 4)]
     public int NakedExtraWidth { get => _nakedExtraWidth; set { _nakedExtraWidth = Math.Clamp(value, 0, 4); RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Naked: aufhellen", GroupName = "Untested / Naked", Order = 32,
         Description = "An = Naked-Level werden zusaetzlich heller gezeichnet (Richtung Weiss).")]
     public bool NakedBrighten { get => _nakedBrighten; set { _nakedBrighten = value; RedrawChart(); } }
 
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Linienstil", GroupName = "Darstellung", Order = 10, Description = "Stil aller Level-Linien. Gebrochene Level bleiben (im Broken-Modus Gestrichelt) gepunktet.")]
     public KLLineStyle LineStyle { get => _lineStyle; set { _lineStyle = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Label-Hintergrundbox", GroupName = "Darstellung", Order = 11, Description = "Halbtransparente Box hinter jedem Label -> besser lesbar ueber Kerzen.")]
     public bool LabelBox { get => _labelBox; set { _labelBox = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Label-Box Farbe", GroupName = "Darstellung", Order = 12)]
     public Color LabelBoxColor { get => _labelBoxColor; set { _labelBoxColor = value; RedrawChart(); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Preis im Label", GroupName = "Darstellung", Order = 13, Description = "An = der Preis wird an den Level-Namen angehaengt (z.B. 'pH 20345.25').")]
     public bool ShowPrice { get => _showPrice; set { _showPrice = value; RedrawChart(); } }
 
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 20, Description = "Nur die wichtigsten Level (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Haken wieder weg = vorheriger Zustand zurueck.")]
     public bool PresetMinimal { get => _presetMinimal; set { SetPreset(value ? 1 : 0); } }
-    [Tab(TabName = "Darstellung", TabOrder = 5)]
+    [Tab(TabName = "Darstellung", TabOrder = 8)]
     [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 21, Description = "Alle Level einschalten. Haken wieder weg = vorheriger Zustand zurueck.")]
     public bool PresetVoll { get => _presetVoll; set { SetPreset(value ? 2 : 0); } }
 
-    // ── Volumen-Profil ──
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Value-Area Anteil (%)", GroupName = "Allgemein", Order = 1, Description = "Anteil des Tagesvolumens in der Value Area (Standard 70). VAH/VAL = Raender, VPOC = Preis mit max. Volumen.")]
+    // ── Tag: Volumen-Profil (in Vortag / Aktueller Tag) ──
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Value-Area Anteil (%)", GroupName = "Volumen-Profil", Order = 1, Description = "Anteil des Tagesvolumens in der Value Area (Standard 70). VAH/VAL = Raender, VPOC = Preis mit max. Volumen.")]
     [Range(30, 95)]
     public int ValueAreaPct { get => _valueAreaPct; set { _valueAreaPct = Math.Clamp(value, 30, 95); RecalculateValues(); } }
 
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VAH", GroupName = "Vortag", Order = 10)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VAH", GroupName = "Volumen-Profil", Order = 10)]
     public bool PdVah { get => _pdVah; set { _pdVah = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VAL", GroupName = "Vortag", Order = 20)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VAL", GroupName = "Volumen-Profil", Order = 20)]
     public bool PdVal { get => _pdVal; set { _pdVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VPOC", GroupName = "Vortag", Order = 30)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VPOC", GroupName = "Volumen-Profil", Order = 30)]
     public bool PdVpoc { get => _pdVpoc; set { _pdVpoc = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Farbe VAH/VAL", GroupName = "Vortag", Order = 40)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Farbe VAH/VAL", GroupName = "Volumen-Profil", Order = 40)]
     public Color CPdVaEdge { get => _cPdVah; set { _cPdVah = value; _cPdVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Farbe VPOC", GroupName = "Vortag", Order = 41)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Farbe VPOC", GroupName = "Volumen-Profil", Order = 41)]
     public Color CPdVpoc { get => _cPdVpoc; set { _cPdVpoc = value; RedrawChart(); } }
 
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Aktueller Tag VAH", GroupName = "Aktueller Tag", Order = 10)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag VAH", GroupName = "Volumen-Profil", Order = 10)]
     public bool CdVah { get => _cdVah; set { _cdVah = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Aktueller Tag VAL", GroupName = "Aktueller Tag", Order = 20)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag VAL", GroupName = "Volumen-Profil", Order = 20)]
     public bool CdVal { get => _cdVal; set { _cdVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Aktueller Tag VPOC", GroupName = "Aktueller Tag", Order = 30)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag VPOC", GroupName = "Volumen-Profil", Order = 30)]
     public bool CdVpoc { get => _cdVpoc; set { _cdVpoc = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Farbe VAH/VAL", GroupName = "Aktueller Tag", Order = 40)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Farbe VAH/VAL", GroupName = "Volumen-Profil", Order = 40)]
     public Color CCdVaEdge { get => _cCdVah; set { _cCdVah = value; _cCdVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Farbe VPOC", GroupName = "Aktueller Tag", Order = 41)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Farbe VPOC", GroupName = "Volumen-Profil", Order = 41)]
     public Color CCdVpoc { get => _cCdVpoc; set { _cCdVpoc = value; RedrawChart(); } }
 
-    // ── VWAP ──
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Std-Faktor (Baender)", GroupName = "Allgemein", Order = 1, Description = "VWAP-Baender = VWAP +/- Faktor * Standardabweichung. 1.0 = 1 Sigma. VWAP + sigma aus dem Tages-Histogramm.")]
+    // ── Tag: VWAP (in Vortag / Aktueller Tag) ──
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Std-Faktor (Baender)", GroupName = "VWAP", Order = 1, Description = "VWAP-Baender = VWAP +/- Faktor * Standardabweichung. 1.0 = 1 Sigma. VWAP + sigma aus dem Tages-Histogramm.")]
     [Range(0.1, 5.0)]
     public decimal WStdFactor { get => _wStdFactor; set { _wStdFactor = Math.Clamp(value, 0.1m, 5.0m); RecalculateValues(); } }
 
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag VWAP (POC)", GroupName = "Vortag", Order = 10)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VWAP", GroupName = "VWAP", Order = 10)]
     public bool PdWpoc { get => _pdWpoc; set { _pdWpoc = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag WVAH (+sigma)", GroupName = "Vortag", Order = 20)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag WVAH (+sigma)", GroupName = "VWAP", Order = 20)]
     public bool PdWvah { get => _pdWvah; set { _pdWvah = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag WVAL (-sigma)", GroupName = "Vortag", Order = 30)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag WVAL (-sigma)", GroupName = "VWAP", Order = 30)]
     public bool PdWval { get => _pdWval; set { _pdWval = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Farbe VWAP", GroupName = "Vortag", Order = 40)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Farbe VWAP", GroupName = "VWAP", Order = 40)]
     public Color CPdWpoc { get => _cPdWpoc; set { _cPdWpoc = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Farbe Baender", GroupName = "Vortag", Order = 41)]
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Farbe Baender", GroupName = "VWAP", Order = 41)]
     public Color CPdWEdge { get => _cPdWEdge; set { _cPdWEdge = value; RedrawChart(); } }
 
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Aktueller Tag VWAP (POC)", GroupName = "Aktueller Tag", Order = 10)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag VWAP", GroupName = "VWAP", Order = 10)]
     public bool CdWpoc { get => _cdWpoc; set { _cdWpoc = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Aktueller Tag WVAH", GroupName = "Aktueller Tag", Order = 20)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag WVAH", GroupName = "VWAP", Order = 20)]
     public bool CdWvah { get => _cdWvah; set { _cdWvah = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Aktueller Tag WVAL", GroupName = "Aktueller Tag", Order = 30)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Aktueller Tag WVAL", GroupName = "VWAP", Order = 30)]
     public bool CdWval { get => _cdWval; set { _cdWval = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Farbe VWAP", GroupName = "Aktueller Tag", Order = 40)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Farbe VWAP", GroupName = "VWAP", Order = 40)]
     public Color CCdWpoc { get => _cCdWpoc; set { _cCdWpoc = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Farbe Baender", GroupName = "Aktueller Tag", Order = 41)]
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Farbe Baender", GroupName = "VWAP", Order = 41)]
     public Color CCdWEdge { get => _cCdWEdge; set { _cCdWEdge = value; RedrawChart(); } }
 
     // ── Woche / Monat ──
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche High", GroupName = "Woche", Order = 10)]
     public bool ShowPwH { get => _showPwH; set { _showPwH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Low", GroupName = "Woche", Order = 20)]
     public bool ShowPwL { get => _showPwL; set { _showPwL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Open", GroupName = "Woche", Order = 30)]
     public bool ShowPwO { get => _showPwO; set { _showPwO = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Close", GroupName = "Woche", Order = 40)]
     public bool ShowPwC { get => _showPwC; set { _showPwC = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche High", GroupName = "Aktuelle Woche/Monat", Order = 10)]
     public bool ShowCwH { get => _showCwH; set { _showCwH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche Low", GroupName = "Aktuelle Woche/Monat", Order = 20)]
     public bool ShowCwL { get => _showCwL; set { _showCwL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe Woche", GroupName = "Woche", Order = 50)]
     public Color CWeek { get => _cWeek; set { _cWeek = value; RedrawChart(); } }
 
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat High", GroupName = "Monat", Order = 10)]
     public bool ShowPmH { get => _showPmH; set { _showPmH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Low", GroupName = "Monat", Order = 20)]
     public bool ShowPmL { get => _showPmL; set { _showPmL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Open", GroupName = "Monat", Order = 30)]
     public bool ShowPmO { get => _showPmO; set { _showPmO = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Close", GroupName = "Monat", Order = 40)]
     public bool ShowPmC { get => _showPmC; set { _showPmC = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat High", GroupName = "Aktuelle Woche/Monat", Order = 30)]
     public bool ShowCmH { get => _showCmH; set { _showCmH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat Low", GroupName = "Aktuelle Woche/Monat", Order = 40)]
     public bool ShowCmL { get => _showCmL; set { _showCmL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe akt. Woche", GroupName = "Aktuelle Woche/Monat", Order = 50)]
     public Color CCurWeek { get => _cCurWeek; set { _cCurWeek = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe akt. Monat", GroupName = "Aktuelle Woche/Monat", Order = 51)]
     public Color CCurMonth { get => _cCurMonth; set { _cCurMonth = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe Monat", GroupName = "Monat", Order = 50)]
     public Color CMonth { get => _cMonth; set { _cMonth = value; RedrawChart(); } }
 
@@ -1353,192 +1353,192 @@ public class KeyLevels : Indicator
     [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
     [Display(Name = "Equilibrium", GroupName = "Level", Order = 41)] public string LblCdEq { get => _lCdEq; set { _lCdEq = value; RedrawChart(); } }
 
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Asia High", GroupName = "Level", Order = 11)] public string LblAsiaH { get => _lAsiaH; set { _lAsiaH = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "Asia Low", GroupName = "Level", Order = 12)] public string LblAsiaL { get => _lAsiaL; set { _lAsiaL = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "EU High", GroupName = "Level", Order = 21)] public string LblEuH { get => _lEuH; set { _lEuH = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "EU Low", GroupName = "Level", Order = 22)] public string LblEuL { get => _lEuL; set { _lEuL = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "US High", GroupName = "Level", Order = 31)] public string LblUsH { get => _lUsH; set { _lUsH = value; RedrawChart(); } }
-    [Tab(TabName = "Sessions", TabOrder = 3)]
+    [Tab(TabName = "Sessions", TabOrder = 4)]
     [Display(Name = "US Low", GroupName = "Level", Order = 32)] public string LblUsL { get => _lUsL; set { _lUsL = value; RedrawChart(); } }
 
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB High", GroupName = "Level", Order = 11)] public string LblIbH { get => _lIbH; set { _lIbH = value; RedrawChart(); } }
-    [Tab(TabName = "Initial Balance", TabOrder = 4)]
+    [Tab(TabName = "Initial Balance", TabOrder = 5)]
     [Display(Name = "IB Low", GroupName = "Level", Order = 12)] public string LblIbL { get => _lIbL; set { _lIbL = value; RedrawChart(); } }
 
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VAH", GroupName = "Vortag", Order = 11)] public string LblPVah { get => _lPVah; set { _lPVah = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VAL", GroupName = "Vortag", Order = 21)] public string LblPVal { get => _lPVal; set { _lPVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Vortag VPOC", GroupName = "Vortag", Order = 31)] public string LblPVpoc { get => _lPVpoc; set { _lPVpoc = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Tag VAH", GroupName = "Aktueller Tag", Order = 11)] public string LblCVah { get => _lCVah; set { _lCVah = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Tag VAL", GroupName = "Aktueller Tag", Order = 21)] public string LblCVal { get => _lCVal; set { _lCVal = value; RedrawChart(); } }
-    [Tab(TabName = "Volumen-Profil", TabOrder = 6)]
-    [Display(Name = "Tag VPOC", GroupName = "Aktueller Tag", Order = 31)] public string LblCVpoc { get => _lCVpoc; set { _lCVpoc = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VAH", GroupName = "Volumen-Profil", Order = 11)] public string LblPVah { get => _lPVah; set { _lPVah = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VAL", GroupName = "Volumen-Profil", Order = 21)] public string LblPVal { get => _lPVal; set { _lPVal = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VPOC", GroupName = "Volumen-Profil", Order = 31)] public string LblPVpoc { get => _lPVpoc; set { _lPVpoc = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag VAH", GroupName = "Volumen-Profil", Order = 11)] public string LblCVah { get => _lCVah; set { _lCVah = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag VAL", GroupName = "Volumen-Profil", Order = 21)] public string LblCVal { get => _lCVal; set { _lCVal = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag VPOC", GroupName = "Volumen-Profil", Order = 31)] public string LblCVpoc { get => _lCVpoc; set { _lCVpoc = value; RedrawChart(); } }
 
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag VWAP", GroupName = "Vortag", Order = 11)] public string LblPVwap { get => _lPVwap; set { _lPVwap = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag WVAH", GroupName = "Vortag", Order = 21)] public string LblPWvah { get => _lPWvah; set { _lPWvah = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Vortag WVAL", GroupName = "Vortag", Order = 31)] public string LblPWval { get => _lPWval; set { _lPWval = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Tag VWAP", GroupName = "Aktueller Tag", Order = 11)] public string LblCVwap { get => _lCVwap; set { _lCVwap = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Tag WVAH", GroupName = "Aktueller Tag", Order = 21)] public string LblCWvah { get => _lCWvah; set { _lCWvah = value; RedrawChart(); } }
-    [Tab(TabName = "VWAP", TabOrder = 7)]
-    [Display(Name = "Tag WVAL", GroupName = "Aktueller Tag", Order = 31)] public string LblCWval { get => _lCWval; set { _lCWval = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag VWAP", GroupName = "VWAP", Order = 11)] public string LblPVwap { get => _lPVwap; set { _lPVwap = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag WVAH", GroupName = "VWAP", Order = 21)] public string LblPWvah { get => _lPWvah; set { _lPWvah = value; RedrawChart(); } }
+    [Tab(TabName = "Vortag", TabOrder = 1)]
+    [Display(Name = "Vortag WVAL", GroupName = "VWAP", Order = 31)] public string LblPWval { get => _lPWval; set { _lPWval = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag VWAP", GroupName = "VWAP", Order = 11)] public string LblCVwap { get => _lCVwap; set { _lCVwap = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag WVAH", GroupName = "VWAP", Order = 21)] public string LblCWvah { get => _lCWvah; set { _lCWvah = value; RedrawChart(); } }
+    [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
+    [Display(Name = "Tag WVAL", GroupName = "VWAP", Order = 31)] public string LblCWval { get => _lCWval; set { _lCWval = value; RedrawChart(); } }
 
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche High", GroupName = "Woche", Order = 11)] public string LblPwH { get => _lPwH; set { _lPwH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Low", GroupName = "Woche", Order = 21)] public string LblPwL { get => _lPwL; set { _lPwL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Open", GroupName = "Woche", Order = 31)] public string LblPwO { get => _lPwO; set { _lPwO = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche Close", GroupName = "Woche", Order = 41)] public string LblPwC { get => _lPwC; set { _lPwC = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche High", GroupName = "Aktuelle Woche/Monat", Order = 11)] public string LblCwH { get => _lCwH; set { _lCwH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche Low", GroupName = "Aktuelle Woche/Monat", Order = 21)] public string LblCwL { get => _lCwL; set { _lCwL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat High", GroupName = "Monat", Order = 11)] public string LblPmH { get => _lPmH; set { _lPmH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Low", GroupName = "Monat", Order = 21)] public string LblPmL { get => _lPmL; set { _lPmL = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Open", GroupName = "Monat", Order = 31)] public string LblPmO { get => _lPmO; set { _lPmO = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat Close", GroupName = "Monat", Order = 41)] public string LblPmC { get => _lPmC; set { _lPmC = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat High", GroupName = "Aktuelle Woche/Monat", Order = 31)] public string LblCmH { get => _lCmH; set { _lCmH = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat Low", GroupName = "Aktuelle Woche/Monat", Order = 41)] public string LblCmL { get => _lCmL; set { _lCmL = value; RedrawChart(); } }
 
     // ── TPO ──
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "TPO-Periode (Minuten)", GroupName = "Allgemein", Order = 1, Description = "Laenge einer TPO-Periode (Bracket). Standard 30. Wird per Zeitstempel gebucket -> Chart-Bargroesse egal.")]
     [Range(1, 240)]
     public int TpoPeriodMin { get => _tpoPeriodMin; set { _tpoPeriodMin = Math.Clamp(value, 1, 240); RecalculateValues(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Min-Tail (Single Prints)", GroupName = "Allgemein", Order = 2, Description = "Ab so vielen aufeinanderfolgenden Single Prints am Rand zaehlt es als Buying/Selling Tail. Standard 2.")]
     [Range(1, 20)]
     public int TpoMinTail { get => _tpoMinTail; set { _tpoMinTail = Math.Clamp(value, 1, 20); RedrawChart(); } }
 
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TPOC", GroupName = "Vortag", Order = 10)] public bool PTpPoc { get => _pTpPoc; set { _pTpPoc = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TPOC Name", GroupName = "Vortag", Order = 11)] public string LblPTpoc { get => _lPTpoc; set { _lPTpoc = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TVAH", GroupName = "Vortag", Order = 20)] public bool PTpVah { get => _pTpVah; set { _pTpVah = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TVAH Name", GroupName = "Vortag", Order = 21)] public string LblPTvah { get => _lPTvah; set { _lPTvah = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TVAL", GroupName = "Vortag", Order = 30)] public bool PTpVal { get => _pTpVal; set { _pTpVal = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag TVAL Name", GroupName = "Vortag", Order = 31)] public string LblPTval { get => _lPTval; set { _lPTval = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag Buy Tail", GroupName = "Vortag", Order = 40)] public bool PTpBt { get => _pTpBt; set { _pTpBt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag Buy Tail Name", GroupName = "Vortag", Order = 41)] public string LblPBt { get => _lPBt; set { _lPBt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag Sell Tail", GroupName = "Vortag", Order = 50)] public bool PTpSt { get => _pTpSt; set { _pTpSt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Vortag Sell Tail Name", GroupName = "Vortag", Order = 51)] public string LblPSt { get => _lPSt; set { _lPSt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Farbe TPO", GroupName = "Vortag", Order = 60)] public Color CPTpo { get => _cPTpo; set { _cPTpo = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Farbe Tails", GroupName = "Vortag", Order = 61)] public Color CPTail { get => _cPTail; set { _cPTail = value; RedrawChart(); } }
 
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TPOC", GroupName = "Aktueller Tag", Order = 10)] public bool CTpPoc { get => _cTpPoc; set { _cTpPoc = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TPOC Name", GroupName = "Aktueller Tag", Order = 11)] public string LblCTpoc { get => _lCTpoc; set { _lCTpoc = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TVAH", GroupName = "Aktueller Tag", Order = 20)] public bool CTpVah { get => _cTpVah; set { _cTpVah = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TVAH Name", GroupName = "Aktueller Tag", Order = 21)] public string LblCTvah { get => _lCTvah; set { _lCTvah = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TVAL", GroupName = "Aktueller Tag", Order = 30)] public bool CTpVal { get => _cTpVal; set { _cTpVal = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag TVAL Name", GroupName = "Aktueller Tag", Order = 31)] public string LblCTval { get => _lCTval; set { _lCTval = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag Buy Tail", GroupName = "Aktueller Tag", Order = 40)] public bool CTpBt { get => _cTpBt; set { _cTpBt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag Buy Tail Name", GroupName = "Aktueller Tag", Order = 41)] public string LblCBt { get => _lCBt; set { _lCBt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag Sell Tail", GroupName = "Aktueller Tag", Order = 50)] public bool CTpSt { get => _cTpSt; set { _cTpSt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Tag Sell Tail Name", GroupName = "Aktueller Tag", Order = 51)] public string LblCSt { get => _lCSt; set { _lCSt = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Farbe TPO", GroupName = "Aktueller Tag", Order = 60)] public Color CCTpo { get => _cCTpo; set { _cCTpo = value; RedrawChart(); } }
-    [Tab(TabName = "TPO", TabOrder = 10)]
+    [Tab(TabName = "TPO", TabOrder = 6)]
     [Display(Name = "Farbe Tails", GroupName = "Aktueller Tag", Order = 61)] public Color CCTail { get => _cCTail; set { _cCTail = value; RedrawChart(); } }
 
     // ── Sync (Master-Slave) ──
-    [Tab(TabName = "Sync", TabOrder = 11)]
+    [Tab(TabName = "Sync", TabOrder = 7)]
     [Display(Name = "Rolle", GroupName = "Master-Slave", Order = 1,
         Description = "Standalone = rechnet + zeichnet lokal (Default). Master = rechnet + publiziert die Level (auf einem Chart mit viel Historie laden). Slave = rechnet NICHT selbst, spiegelt die Level des Masters (fuer schnelle Tick/Renko-Charts mit wenig Historie).")]
     public KLRole Role { get => _role; set { _role = value; RecalculateValues(); RedrawChart(); } }
 
-    [Tab(TabName = "Sync", TabOrder = 11)]
+    [Tab(TabName = "Sync", TabOrder = 7)]
     [Display(Name = "Sync-Key", GroupName = "Master-Slave", Order = 2,
         Description = "Verbindet einen Master mit seinen Slaves. Master und Slave(s) desselben Instruments mit GLEICHEM Key teilen die Level. Verschiedene Keys = getrennte Gruppen. Master-Chart muss geoeffnet bleiben.")]
     public string SyncKeyStr { get => _syncKey; set { _syncKey = value; RedrawChart(); } }
 
     // ── HTF-Profil (Woche/Monat VP + VWAP) ──
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche VPOC", GroupName = "Wochen-VP", Order = 1)] public bool PwVpocOn { get => _pwVpocOn; set { _pwVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche VAH", GroupName = "Wochen-VP", Order = 2)] public bool PwVahOn { get => _pwVahOn; set { _pwVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche VAL", GroupName = "Wochen-VP", Order = 3)] public bool PwValOn { get => _pwValOn; set { _pwValOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche VPOC", GroupName = "Wochen-VP", Order = 4)] public bool DwVpocOn { get => _dwVpocOn; set { _dwVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche VAH", GroupName = "Wochen-VP", Order = 5)] public bool DwVahOn { get => _dwVahOn; set { _dwVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche VAL", GroupName = "Wochen-VP", Order = 6)] public bool DwValOn { get => _dwValOn; set { _dwValOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe", GroupName = "Wochen-VP", Order = 7)] public Color CWeekVp { get => _cWeekVp; set { _cWeekVp = value; RedrawChart(); } }
 
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat VPOC", GroupName = "Monats-VP", Order = 10)] public bool PmVpocOn { get => _pmVpocOn; set { _pmVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat VAH", GroupName = "Monats-VP", Order = 11)] public bool PmVahOn { get => _pmVahOn; set { _pmVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat VAL", GroupName = "Monats-VP", Order = 12)] public bool PmValOn { get => _pmValOn; set { _pmValOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat VPOC", GroupName = "Monats-VP", Order = 13)] public bool DmVpocOn { get => _dmVpocOn; set { _dmVpocOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat VAH", GroupName = "Monats-VP", Order = 14)] public bool DmVahOn { get => _dmVahOn; set { _dmVahOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat VAL", GroupName = "Monats-VP", Order = 15)] public bool DmValOn { get => _dmValOn; set { _dmValOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe", GroupName = "Monats-VP", Order = 16)] public Color CMonthVp { get => _cMonthVp; set { _cMonthVp = value; RedrawChart(); } }
 
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vorwoche VWAP", GroupName = "Wochen-VWAP", Order = 20)] public bool PwVwapOn { get => _pwVwapOn; set { _pwVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Woche VWAP", GroupName = "Wochen-VWAP", Order = 21)] public bool DwVwapOn { get => _dwVwapOn; set { _dwVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Wochen-VWAP", Order = 22)] public bool WVwapBands { get => _wVwapBands; set { _wVwapBands = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe", GroupName = "Wochen-VWAP", Order = 23)] public Color CWeekVwap { get => _cWeekVwap; set { _cWeekVwap = value; RedrawChart(); } }
 
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat VWAP", GroupName = "Monats-VWAP", Order = 30)] public bool PmVwapOn { get => _pmVwapOn; set { _pmVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Akt. Monat VWAP", GroupName = "Monats-VWAP", Order = 31)] public bool DmVwapOn { get => _dmVwapOn; set { _dmVwapOn = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Baender (WVAH/WVAL)", GroupName = "Monats-VWAP", Order = 32)] public bool MVwapBands { get => _mVwapBands; set { _mVwapBands = value; RedrawChart(); } }
-    [Tab(TabName = "Woche/Monat", TabOrder = 8)]
+    [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Farbe", GroupName = "Monats-VWAP", Order = 33)] public Color CMonthVwap { get => _cMonthVwap; set { _cMonthVwap = value; RedrawChart(); } }
 }
