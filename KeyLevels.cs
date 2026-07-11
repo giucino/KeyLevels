@@ -207,6 +207,16 @@ public class KeyLevels : Indicator
     private decimal _nkMoLo, _nkMoHi; private bool _nkMoHave;   // laufende Monats-Range (HTF-Naked)
     private int _nkTf;                 // Naked-Horizont des aktuellen Blocks: 0=Tag, 1=Woche, 2=Monat
     private bool _nakedHtfPeriod = true;   // HTF-Level ueber die ganze Periode messen statt nur heute
+
+    // ── Level-Touch-Alerts ──
+    private bool _alertsEnabled = false;
+    private int _alertTolTicks = 2;        // Toleranz in Ticks fuer "angelaufen"
+    private int _alertArmTicks = 8;        // so weit muss der Preis weg, bevor erneut alarmiert wird
+    private string _alertSound = "alert1.wav";
+    private bool _histDone;                // erst nach Historien-Aufbau alarmieren (kein Storm beim Laden)
+    private readonly List<(decimal Price, string Label)> _alertLevels = new();  // Snapshot aus OnRender
+    private readonly Dictionary<string, bool> _alertArmed = new();              // Armed-State pro Label
+    private readonly object _alertLock = new();
     public enum KLLineStyle { Durchgezogen, Gestrichelt, Gepunktet }
     private KLLineStyle _lineStyle = KLLineStyle.Durchgezogen;
     private bool _labelBox = false;
@@ -256,6 +266,8 @@ public class KeyLevels : Indicator
             return;
 
         ComputeDisplay();
+        CheckLevelAlerts();
+        _histDone = true;
         RedrawChart();
     }
 
@@ -279,6 +291,8 @@ public class KeyLevels : Indicator
         _curVolWeek.Clear(); _curVolMonth.Clear();
         _pwHaveVp = _dwHaveVp = _pmHaveVp = _dmHaveVp = false;
         _pwHaveW = _dwHaveW = _pmHaveW = _dmHaveW = false;
+        _histDone = false;
+        lock (_alertLock) { _alertArmed.Clear(); _alertLevels.Clear(); }
     }
 
     // Einen Bar in den Tages-/Session-/IB-State einrechnen.
@@ -592,6 +606,7 @@ public class KeyLevels : Indicator
             if (_role == KLRole.Master)
                 PublishLevels();
         }
+        SnapshotAlertLevels();
         FlushLevels(context, cont, region);
     }
 
@@ -793,6 +808,61 @@ public class KeyLevels : Indicator
 
     private static bool Broken(decimal level, decimal lo, decimal hi, bool have)
         => have && level > lo && level < hi;   // heutiger Bereich hat das Level durchhandelt
+
+    // Snapshot der aktuell gezeichneten Level-Preise (aus OnRender) fuer die Alert-Pruefung im OnCalculate.
+    private void SnapshotAlertLevels()
+    {
+        lock (_alertLock)
+        {
+            _alertLevels.Clear();
+            foreach (var lv in _levels)
+                _alertLevels.Add((lv.Price, lv.Label));
+        }
+    }
+
+    // Level-Touch-Alert: feuert einmalig, wenn der Preis ein Level anlaeuft; entschaerft danach,
+    // bis der Preis wieder > Re-Arm-Abstand entfernt ist (kein Dauer-Alarm). Telegram/Popup laufen
+    // ueber die ATAS-Alarm-Anbindung, sobald AddAlert ausgeloest wird.
+    private void CheckLevelAlerts()
+    {
+        if (!_alertsEnabled)
+            return;
+        var c = GetCandle(CurrentBar - 1);
+        if (c == null)
+            return;
+        decimal tick = InstrumentInfo?.TickSize ?? 0m;
+        if (tick <= 0m)
+            return;
+        decimal tol = tick * _alertTolTicks;
+        decimal armDist = tick * _alertArmTicks;
+
+        lock (_alertLock)
+        {
+            foreach (var lv in _alertLevels)
+            {
+                bool armed = _alertArmed.TryGetValue(lv.Label, out var a) && a;
+                if (!armed)
+                {
+                    if (Math.Abs(c.Close - lv.Price) >= armDist)
+                        _alertArmed[lv.Label] = true;   // Preis hat das Level verlassen -> scharf
+                    continue;
+                }
+                if (c.Low - tol <= lv.Price && lv.Price <= c.High + tol)
+                {
+                    _alertArmed[lv.Label] = false;      // gefeuert -> entschaerfen
+                    if (_histDone)
+                    {
+                        try
+                        {
+                            AlertsEnabled = true;
+                            AddAlert(_alertSound, $"KeyLevel {lv.Label} @ {lv.Price} angelaufen | {InstrumentInfo?.Instrument} | {c.LastTime:HH:mm}");
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+    }
 
     // Preset-State: Snapshot der Enables vor Aktivierung, damit Abwaehlen wiederherstellt.
     private bool[] _presetSnapshot;
@@ -1213,6 +1283,34 @@ public class KeyLevels : Indicator
     [Display(Name = "HTF: ganze Periode messen", GroupName = "Untested / Naked", Order = 33,
         Description = "An = Wochen-/Monats-Level gelten nur als naked, wenn sie ueber die ganze laufende Woche/Monat noch nicht angelaufen wurden (statt nur heute). Tages-Level bleiben tagesbasiert. Aus = alles nur heute.")]
     public bool NakedHtfPeriod { get => _nakedHtfPeriod; set { _nakedHtfPeriod = value; RedrawChart(); } }
+
+    // ── Alerts ──
+    [Tab(TabName = "Alerts", TabOrder = 10)]
+    [Display(Name = "Level-Touch-Alerts aktiv", GroupName = "Alerts", Order = 1,
+        Description = "An = Alarm (Ton + ATAS-Alarmfenster, optional Telegram ueber die ATAS-Anbindung), sobald der Preis ein aktives Level anlaeuft.")]
+    public bool AlertsActive { get => _alertsEnabled; set { _alertsEnabled = value; } }
+    [Tab(TabName = "Alerts", TabOrder = 10)]
+    [Display(Name = "Touch-Toleranz (Ticks)", GroupName = "Alerts", Order = 2,
+        Description = "Wie nah der Preis dem Level kommen muss, damit es als 'angelaufen' zaehlt. Default 2.")]
+    [Range(0, 50)]
+    public int AlertTolTicks { get => _alertTolTicks; set { _alertTolTicks = Math.Max(0, value); } }
+    [Tab(TabName = "Alerts", TabOrder = 10)]
+    [Display(Name = "Re-Arm Abstand (Ticks)", GroupName = "Alerts", Order = 3,
+        Description = "So weit muss sich der Preis vom Level entfernen, bevor ein erneuter Touch wieder alarmiert. Verhindert Dauer-Alarme. Default 8.")]
+    [Range(1, 200)]
+    public int AlertArmTicks { get => _alertArmTicks; set { _alertArmTicks = Math.Max(1, value); } }
+    [Tab(TabName = "Alerts", TabOrder = 10)]
+    [Display(Name = "Sound-Datei", GroupName = "Alerts", Order = 4,
+        Description = "Sound aus dem ATAS-Sounds-Ordner (z.B. alert1.wav). Popup/Telegram laufen zusaetzlich ueber die ATAS-Alarm-Anbindung.")]
+    public string AlertSound { get => _alertSound; set { _alertSound = value; } }
+    [Tab(TabName = "Alerts", TabOrder = 10)]
+    [Display(Name = "Test-Alarm senden", GroupName = "Alerts", Order = 5,
+        Description = "Sendet sofort einen Test-Alarm (prueft Ton- und Telegram-Anbindung).")]
+    public bool AlertTest
+    {
+        get => false;
+        set { if (value) { try { AlertsEnabled = true; AddAlert(_alertSound, $"KeyLevels TEST-Alarm | {InstrumentInfo?.Instrument} | {DateTime.Now:HH:mm:ss}"); } catch { } } }
+    }
 
     [Tab(TabName = "Darstellung", TabOrder = 9)]
     [Display(Name = "Linienstil", GroupName = "Darstellung", Order = 10, Description = "Stil aller Level-Linien. Gebrochene Level bleiben (im Broken-Modus Gestrichelt) gepunktet.")]
