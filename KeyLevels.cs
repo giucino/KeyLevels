@@ -1201,15 +1201,15 @@ public class KeyLevels : Indicator
     public bool ShowPrice { get => _showPrice; set { _showPrice = value; RedrawChart(); } }
 
     [Tab(TabName = "Darstellung", TabOrder = 8)]
-    [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 20, Description = "Nur die wichtigsten Level (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Haken wieder weg = vorheriger Zustand zurueck.")]
+    [Display(Name = "Preset: Minimal", GroupName = "Presets", Order = 40, Description = "Nur die wichtigsten Level (Vortag H/L, Tag H/L, VPOC Vortag+heute, VWAP, Wochen-/Monats-VPOC, IB). Haken wieder weg = vorheriger Zustand zurueck.")]
     public bool PresetMinimal { get => _presetMinimal; set { SetPreset(value ? 1 : 0); } }
     [Tab(TabName = "Darstellung", TabOrder = 8)]
-    [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 21, Description = "Alle Level einschalten. Haken wieder weg = vorheriger Zustand zurueck.")]
+    [Display(Name = "Preset: Voll", GroupName = "Presets", Order = 41, Description = "Alle Level einschalten. Haken wieder weg = vorheriger Zustand zurueck.")]
     public bool PresetVoll { get => _presetVoll; set { SetPreset(value ? 2 : 0); } }
 
     // ── Tag: Volumen-Profil (in Vortag / Aktueller Tag) ──
     [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
-    [Display(Name = "Value-Area Anteil (%)", GroupName = "Volumen-Profil", Order = 1, Description = "Anteil des Tagesvolumens in der Value Area (Standard 70). VAH/VAL = Raender, VPOC = Preis mit max. Volumen.")]
+    [Display(Name = "Value-Area Anteil (%)", GroupName = "Volumen-Profil", Order = 10, Description = "Anteil des Tagesvolumens in der Value Area (Standard 70). VAH/VAL = Raender, VPOC = Preis mit max. Volumen. Gilt fuer alle VP (Tag/Woche/Monat).")]
     [Range(30, 95)]
     public int ValueAreaPct { get => _valueAreaPct; set { _valueAreaPct = Math.Clamp(value, 30, 95); RecalculateValues(); } }
 
@@ -1247,7 +1247,7 @@ public class KeyLevels : Indicator
 
     // ── Tag: VWAP (in Vortag / Aktueller Tag) ──
     [Tab(TabName = "Aktueller Tag", TabOrder = 2)]
-    [Display(Name = "Std-Faktor (Baender)", GroupName = "VWAP", Order = 1, Description = "VWAP-Baender = VWAP +/- Faktor * Standardabweichung. 1.0 = 1 Sigma. VWAP + sigma aus dem Tages-Histogramm.")]
+    [Display(Name = "Std-Faktor (Baender)", GroupName = "VWAP", Order = 10, Description = "VWAP-Baender = VWAP +/- Faktor * Standardabweichung. 1.0 = 1 Sigma. Gilt fuer alle VWAP (Tag/Woche/Monat).")]
     [Range(0.1, 5.0)]
     public decimal WStdFactor { get => _wStdFactor; set { _wStdFactor = Math.Clamp(value, 0.1m, 5.0m); RecalculateValues(); } }
 
@@ -1495,19 +1495,19 @@ public class KeyLevels : Indicator
 
     // ── HTF-Profil (Woche/Monat VP + VWAP) ──
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Vorwoche VPOC", GroupName = "Wochen-VP", Order = 1)] public bool PwVpocOn { get => _pwVpocOn; set { _pwVpocOn = value; RedrawChart(); } }
+    [Display(Name = "Vorwoche VPOC", GroupName = "Wochen-VP", Order = 10)] public bool PwVpocOn { get => _pwVpocOn; set { _pwVpocOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Vorwoche VAH", GroupName = "Wochen-VP", Order = 2)] public bool PwVahOn { get => _pwVahOn; set { _pwVahOn = value; RedrawChart(); } }
+    [Display(Name = "Vorwoche VAH", GroupName = "Wochen-VP", Order = 11)] public bool PwVahOn { get => _pwVahOn; set { _pwVahOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Vorwoche VAL", GroupName = "Wochen-VP", Order = 3)] public bool PwValOn { get => _pwValOn; set { _pwValOn = value; RedrawChart(); } }
+    [Display(Name = "Vorwoche VAL", GroupName = "Wochen-VP", Order = 12)] public bool PwValOn { get => _pwValOn; set { _pwValOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Akt. Woche VPOC", GroupName = "Wochen-VP", Order = 4)] public bool DwVpocOn { get => _dwVpocOn; set { _dwVpocOn = value; RedrawChart(); } }
+    [Display(Name = "Akt. Woche VPOC", GroupName = "Wochen-VP", Order = 13)] public bool DwVpocOn { get => _dwVpocOn; set { _dwVpocOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Akt. Woche VAH", GroupName = "Wochen-VP", Order = 5)] public bool DwVahOn { get => _dwVahOn; set { _dwVahOn = value; RedrawChart(); } }
+    [Display(Name = "Akt. Woche VAH", GroupName = "Wochen-VP", Order = 14)] public bool DwVahOn { get => _dwVahOn; set { _dwVahOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Akt. Woche VAL", GroupName = "Wochen-VP", Order = 6)] public bool DwValOn { get => _dwValOn; set { _dwValOn = value; RedrawChart(); } }
+    [Display(Name = "Akt. Woche VAL", GroupName = "Wochen-VP", Order = 15)] public bool DwValOn { get => _dwValOn; set { _dwValOn = value; RedrawChart(); } }
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
-    [Display(Name = "Farbe", GroupName = "Wochen-VP", Order = 7)] public Color CWeekVp { get => _cWeekVp; set { _cWeekVp = value; RedrawChart(); } }
+    [Display(Name = "Farbe", GroupName = "Wochen-VP", Order = 16)] public Color CWeekVp { get => _cWeekVp; set { _cWeekVp = value; RedrawChart(); } }
 
     [Tab(TabName = "Woche/Monat", TabOrder = 3)]
     [Display(Name = "Vormonat VPOC", GroupName = "Monats-VP", Order = 10)] public bool PmVpocOn { get => _pmVpocOn; set { _pmVpocOn = value; RedrawChart(); } }
