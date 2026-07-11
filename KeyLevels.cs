@@ -217,6 +217,10 @@ public class KeyLevels : Indicator
     private readonly List<(decimal Price, string Label)> _alertLevels = new();  // Snapshot aus OnRender
     private readonly Dictionary<string, bool> _alertArmed = new();              // Armed-State pro Label
     private readonly object _alertLock = new();
+
+    // ── Konfluenz-Export (fuer OrderflowSignal) ──
+    private bool _exportLevels = false;
+    private DateTime _lastExport = DateTime.MinValue;
     public enum KLLineStyle { Durchgezogen, Gestrichelt, Gepunktet }
     private KLLineStyle _lineStyle = KLLineStyle.Durchgezogen;
     private bool _labelBox = false;
@@ -607,6 +611,7 @@ public class KeyLevels : Indicator
                 PublishLevels();
         }
         SnapshotAlertLevels();
+        ExportLevels();
         FlushLevels(context, cont, region);
     }
 
@@ -818,6 +823,41 @@ public class KeyLevels : Indicator
             foreach (var lv in _levels)
                 _alertLevels.Add((lv.Price, lv.Label));
         }
+    }
+
+    // Gemeinsamer Austauschordner fuer Konsumenten (z.B. OrderflowSignal). Dateiname = Instrument.
+    private static string SyncFilePath(string instrument)
+    {
+        string dir = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ATAS", "keylevels_sync");
+        string safe = instrument;
+        foreach (var ch in System.IO.Path.GetInvalidFileNameChars())
+            safe = safe.Replace(ch, '_');
+        if (string.IsNullOrWhiteSpace(safe)) safe = "instrument";
+        return System.IO.Path.Combine(dir, safe + ".txt");
+    }
+
+    // Aktive Level-Preise in eine Datei schreiben (Konfluenz-Link). Gedrosselt (~2 s), Opt-in.
+    private void ExportLevels()
+    {
+        if (!_exportLevels) return;
+        var instr = InstrumentInfo?.Instrument;
+        if (string.IsNullOrEmpty(instr)) return;
+        var now = DateTime.UtcNow;
+        if ((now - _lastExport).TotalSeconds < 2) return;
+        _lastExport = now;
+        try
+        {
+            string path = SyncFilePath(instr);
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+            var sb = new System.Text.StringBuilder();
+            lock (_alertLock)
+                foreach (var lv in _alertLevels)
+                    sb.Append(lv.Price.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                      .Append('\t').Append(lv.Label ?? "").Append('\n');
+            System.IO.File.WriteAllText(path, sb.ToString());
+        }
+        catch { }
     }
 
     // Level-Touch-Alert: feuert einmalig, wenn der Preis ein Level anlaeuft; entschaerft danach,
@@ -1641,6 +1681,11 @@ public class KeyLevels : Indicator
     [Display(Name = "Sync-Key", GroupName = "Master-Slave", Order = 2,
         Description = "Verbindet einen Master mit seinen Slaves. Master und Slave(s) desselben Instruments mit GLEICHEM Key teilen die Level. Verschiedene Keys = getrennte Gruppen. Master-Chart muss geoeffnet bleiben.")]
     public string SyncKeyStr { get => _syncKey; set { _syncKey = value; RedrawChart(); } }
+
+    [Tab(TabName = "Sync", TabOrder = 8)]
+    [Display(Name = "Level-Export (fuer OrderflowSignal)", GroupName = "Konfluenz", Order = 10,
+        Description = "An = die aktiven Level-Preise werden in eine Datei geschrieben (%APPDATA%\\ATAS\\keylevels_sync\\<Instrument>.txt). OrderflowSignal liest sie und markiert konfluente Reversals. Nur auf EINEM Chart pro Instrument aktivieren (z.B. dem Master).")]
+    public bool ExportLevelsOn { get => _exportLevels; set { _exportLevels = value; RedrawChart(); } }
 
     // ── Woche/Monat: Volumen-Profil + VWAP ──
     [Tab(TabName = "Woche", TabOrder = 3)]
