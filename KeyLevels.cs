@@ -203,6 +203,10 @@ public class KeyLevels : Indicator
     private bool _nakedBrighten = true;
     private decimal _nkLo, _nkHi;   // Wick-Extrema des aktuellen Tages ("angelaufen?"-Referenz)
     private bool _nkHave;
+    private decimal _nkWkLo, _nkWkHi; private bool _nkWkHave;   // laufende Wochen-Range (HTF-Naked)
+    private decimal _nkMoLo, _nkMoHi; private bool _nkMoHave;   // laufende Monats-Range (HTF-Naked)
+    private int _nkTf;                 // Naked-Horizont des aktuellen Blocks: 0=Tag, 1=Woche, 2=Monat
+    private bool _nakedHtfPeriod = true;   // HTF-Level ueber die ganze Periode messen statt nur heute
     public enum KLLineStyle { Durchgezogen, Gestrichelt, Gepunktet }
     private KLLineStyle _lineStyle = KLLineStyle.Durchgezogen;
     private bool _labelBox = false;
@@ -424,6 +428,10 @@ public class KeyLevels : Indicator
         if (lc == null || !_haveCur)
             return;
 
+        // Live-Bar (neueste Kerze) in die laufende Wochen-/Monats-Range falten -> HTF-Naked aktuell.
+        if (_haveWeek) { if (lc.High > _dwHigh) _dwHigh = lc.High; if (lc.Low < _dwLow) _dwLow = lc.Low; }
+        if (_haveMonth) { if (lc.High > _dmHigh) _dmHigh = lc.High; if (lc.Low < _dmLow) _dmLow = lc.Low; }
+
         // Nur falten, wenn der Live-Bar noch zum selben (Chart-)Tag gehoert.
         DateTime leff = lc.Time.AddHours(_tzOffset);
         if (leff.Date == _curDate)
@@ -596,6 +604,10 @@ public class KeyLevels : Indicator
         _nkHave = haveDayRange; _nkLo = dLo; _nkHi = dHi;
         // Close-basierter Break (Option): fuer die Broken-Pruefung die Close-Extrema statt Wick nehmen.
         if (_breakOnClose && haveDayRange) { dLo = _dCloseLo; dHi = _dCloseHi; }
+        // Naked-Horizonte pro Zeitrahmen: Tag = heute, Woche/Monat = laufende Perioden-Range.
+        _nkWkHave = _haveWeek; _nkWkLo = _dwLow; _nkWkHi = _dwHigh;
+        _nkMoHave = _haveMonth; _nkMoLo = _dmLow; _nkMoHi = _dmHigh;
+        _nkTf = 0;
 
         // Vortag (kann "gebrochen" sein, wenn der heutige Bereich durchhandelt).
         if (_havePrev)
@@ -659,6 +671,7 @@ public class KeyLevels : Indicator
             if (_cdWval) Level(_dWval, _lCWval, _cCdWEdge, false, _curDayStartBar);
         }
 
+        _nkTf = 1;   // ab hier Wochen-Level -> Wochen-Horizont
         // Vorwoche OHLC (gebrochen moeglich).
         if (_havePrevWeek)
         {
@@ -674,6 +687,7 @@ public class KeyLevels : Indicator
             if (_showCwL) Level(_dwLow, _lCwL, _cCurWeek, false, _curWeekStartBar);
         }
 
+        _nkTf = 2;   // ab hier Monats-Level -> Monats-Horizont
         // Vormonat OHLC.
         if (_havePrevMonth)
         {
@@ -689,6 +703,7 @@ public class KeyLevels : Indicator
             if (_showCmL) Level(_dmLow, _lCmL, _cCurMonth, false, _curMonthStartBar);
         }
 
+        _nkTf = 0;   // zurueck auf Tages-Horizont (IB / TPO sind tagesbasiert)
         // IB-Multiples (Projektionen aus der IB-Range).
         if (_showIb && _ibHas)
         {
@@ -722,6 +737,7 @@ public class KeyLevels : Indicator
         if (_cTpBt && _dHaveBt) Level(_dBt, _lCBt, _cCTail, false, _curDayStartBar);
         if (_cTpSt && _dHaveSt) Level(_dSt, _lCSt, _cCTail, false, _curDayStartBar);
 
+        _nkTf = 1;   // Wochen-VP
         // Wochen-Volumen-Profil.
         if (_pwHaveVp)
         {
@@ -735,6 +751,7 @@ public class KeyLevels : Indicator
             if (_dwVahOn) Level(_dwVah, "wVAH", _cWeekVp, false, _curWeekStartBar);
             if (_dwValOn) Level(_dwVal, "wVAL", _cWeekVp, false, _curWeekStartBar);
         }
+        _nkTf = 2;   // Monats-VP
         // Monats-Volumen-Profil.
         if (_pmHaveVp)
         {
@@ -748,6 +765,7 @@ public class KeyLevels : Indicator
             if (_dmVahOn) Level(_dmVah, "mVAH", _cMonthVp, false, _curMonthStartBar);
             if (_dmValOn) Level(_dmVal, "mVAL", _cMonthVp, false, _curMonthStartBar);
         }
+        _nkTf = 1;   // Wochen-VWAP
         // Wochen-VWAP.
         if (_pwHaveW && _pwVwapOn)
         {
@@ -759,6 +777,7 @@ public class KeyLevels : Indicator
             Level(_dwVwap, "wVWAP", _cWeekVwap, false, _curWeekStartBar);
             if (_wVwapBands) { Level(_dwWvah, "wWVAH", _cWeekVwap, false, _curWeekStartBar); Level(_dwWval, "wWVAL", _cWeekVwap, false, _curWeekStartBar); }
         }
+        _nkTf = 2;   // Monats-VWAP
         // Monats-VWAP.
         if (_pmHaveW && _pmVwapOn)
         {
@@ -877,7 +896,11 @@ public class KeyLevels : Indicator
     // Naked = heute (per Wick) noch nicht angelaufen -> starker, unberuehrter Kandidat.
     private void Level(decimal price, string label, Color col, bool broken, int originBar)
     {
-        bool naked = _nkHave && (price > _nkHi || price < _nkLo);
+        int tf = _nakedHtfPeriod ? _nkTf : 0;
+        bool nHave = tf == 1 ? _nkWkHave : tf == 2 ? _nkMoHave : _nkHave;
+        decimal nLo = tf == 1 ? _nkWkLo : tf == 2 ? _nkMoLo : _nkLo;
+        decimal nHi = tf == 1 ? _nkWkHi : tf == 2 ? _nkMoHi : _nkHi;
+        bool naked = nHave && (price > nHi || price < nLo);
         _levels.Add((price, originBar, label, col, broken, naked));
     }
 
@@ -1186,6 +1209,10 @@ public class KeyLevels : Indicator
     [Display(Name = "Naked: aufhellen", GroupName = "Untested / Naked", Order = 32,
         Description = "An = Naked-Level werden zusaetzlich heller gezeichnet (Richtung Weiss).")]
     public bool NakedBrighten { get => _nakedBrighten; set { _nakedBrighten = value; RedrawChart(); } }
+    [Tab(TabName = "Darstellung", TabOrder = 9)]
+    [Display(Name = "HTF: ganze Periode messen", GroupName = "Untested / Naked", Order = 33,
+        Description = "An = Wochen-/Monats-Level gelten nur als naked, wenn sie ueber die ganze laufende Woche/Monat noch nicht angelaufen wurden (statt nur heute). Tages-Level bleiben tagesbasiert. Aus = alles nur heute.")]
+    public bool NakedHtfPeriod { get => _nakedHtfPeriod; set { _nakedHtfPeriod = value; RedrawChart(); } }
 
     [Tab(TabName = "Darstellung", TabOrder = 9)]
     [Display(Name = "Linienstil", GroupName = "Darstellung", Order = 10, Description = "Stil aller Level-Linien. Gebrochene Level bleiben (im Broken-Modus Gestrichelt) gepunktet.")]
