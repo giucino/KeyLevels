@@ -110,8 +110,8 @@ Master  (z.B. NQ Daily / 60min)   Rolle = Master, Sync-Key = "A"
 Slave   (NQ Renko 24 / 900 Tick)  Rolle = Slave,  Sync-Key = "A"
 </pre>
 <div class="warn">
-Der <strong>Master-Chart muss geöffnet bleiben</strong> (er publiziert beim Rechnen). Auf dem Slave laufen die Linien über die
-volle Breite (kein Origin-Start). Nur gleiches Instrument.
+Der <strong>Master-Chart muss geöffnet bleiben</strong> (er publiziert beim Rechnen). Der Master schickt die <strong>Ursprungszeit</strong>
+jedes Levels mit, sodass die Linien auch auf dem Slave am Perioden-Beginn starten (nicht mehr über die volle Breite). Nur gleiches Instrument.
 </div>
 
 <h2>Einstellungen (Reiter)</h2>

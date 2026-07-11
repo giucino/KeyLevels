@@ -94,7 +94,7 @@ public class KeyLevels : Indicator
     private KLRole _role = KLRole.Standalone;
     private string _syncKey = "A";
     private static readonly object _sharedLock = new();
-    private static readonly Dictionary<string, List<(decimal Price, string Label, Color Col, bool Broken)>> _shared = new();
+    private static readonly Dictionary<string, List<(decimal Price, string Label, Color Col, bool Broken, DateTime OriginTime)>> _shared = new();
 
     // ─────────────────────────────────────────────────────────────────
     //  SETTINGS-FELDER
@@ -949,17 +949,41 @@ public class KeyLevels : Indicator
 
     private void PublishLevels()
     {
-        var snap = _levels.Select(l => (l.Price, l.Label, l.Col, l.Broken)).ToList();
+        // Ursprungszeit statt Bar-Index mitschicken -> auf dem Slave (andere Bars) mappbar.
+        var snap = _levels.Select(l => (l.Price, l.Label, l.Col, l.Broken, OriginTime: BarTime(l.OriginBar))).ToList();
         lock (_sharedLock) { _shared[SyncKey()] = snap; }
     }
 
     private void BuildSlaveLevels()
     {
-        List<(decimal Price, string Label, Color Col, bool Broken)> snap = null;
+        List<(decimal Price, string Label, Color Col, bool Broken, DateTime OriginTime)> snap = null;
         lock (_sharedLock) { _shared.TryGetValue(SyncKey(), out snap); }
         if (snap == null) return;
         foreach (var s in snap)
-            _levels.Add((s.Price, -1, s.Label, s.Col, s.Broken, false));   // OriginBar -1 = volle Breite; Naked nur lokal
+            _levels.Add((s.Price, BarByTime(s.OriginTime), s.Label, s.Col, s.Broken, false));   // Origin auf lokalen Bar mappen; Naked nur lokal
+    }
+
+    // Bar-Index -> Zeit (fuer die Publikation an Slaves).
+    private DateTime BarTime(int bar)
+        => bar >= 0 && bar < CurrentBar ? (GetCandle(bar)?.Time ?? DateTime.MinValue) : DateTime.MinValue;
+
+    // Zeit -> lokaler Bar-Index (erster Bar mit Time >= t). -1 = kein Ursprung (volle Breite).
+    private int BarByTime(DateTime t)
+    {
+        int last = CurrentBar - 1;
+        if (t == DateTime.MinValue || last < 0) return -1;
+        var first = GetCandle(0);
+        if (first != null && t <= first.Time) return 0;      // Ursprung vor geladener Historie -> links anfangen
+        var lastC = GetCandle(last);
+        if (lastC != null && t >= lastC.Time) return last;
+        int lo = 0, hi = last;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) >> 1;
+            var cm = GetCandle(mid);
+            if (cm != null && cm.Time < t) lo = mid + 1; else hi = mid;
+        }
+        return lo;
     }
 
     // Sammelt ein Level (preisbasiert) fuer diesen Frame.
